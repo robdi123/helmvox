@@ -1,18 +1,31 @@
 # HelmVox
 
-**Asistente de voz para motoristas.** Habla con tu móvil a través del intercomunicador del casco
-sin soltar el manillar: mensajes, música, rutas, llamadas, ubicación… y, si tienes un Cardo,
-también el intercom, la radio y la batería del casco.
+**Asistente de voz para motoristas con intercomunicador Cardo.** Habla con tu móvil a través del
+casco sin soltar el manillar: mensajes, música, rutas, llamadas y ubicación, y además controla el
+intercom, la radio y la batería de tu Cardo.
 
-> 🇬🇧 *HelmVox is a free, open-source Android voice assistant for motorcyclists, designed to be used
-> through a Bluetooth helmet intercom. Spanish-first. Optional AI understanding with your own
-> Anthropic API key.*
+> 🇬🇧 *HelmVox is a free, open-source Android voice assistant for motorcyclists using a **Cardo**
+> helmet intercom (tested on Cardo PackTalk and PackTalk Bold). Spanish-first. Optional AI
+> understanding with your own Anthropic API key.*
 
 ---
 
+## Compatibilidad
+
+| Intercomunicador | Estado |
+|---|---|
+| **Cardo PackTalk** | ✅ Probado |
+| **Cardo PackTalk Bold** | ✅ Probado |
+| Otros Cardo con el protocolo clásico (Freecom 2/4 Plus, SmartPack, PackTalk Slim…) | ⚠️ Probablemente funcione, sin probar |
+| Cardo nuevos (PackTalk Edge, Neo, Outdoor…) | ❌ Usan otro protocolo: las funciones del casco no funcionan |
+| Otras marcas (Sena, Interphone…) | ❌ Sin soporte. Las funciones del móvil podrían ir, pero no está probado |
+
+HelmVox está pensada **solo para Cardo**. Si la pruebas en otro modelo, cuéntanos cómo te fue
+abriendo un *issue*.
+
 ## Qué hace
 
-**Con cualquier intercomunicador Bluetooth** (Sena, Cardo, Interphone, FreedConn…):
+**Desde el móvil, a través del casco:**
 
 - **Mensajes:** te lee los WhatsApp, Telegram y SMS al llegar y te deja responder con la voz.
 - **Música:** pon / pausa / siguiente / anterior / volumen, o «pon música de Queen».
@@ -21,13 +34,13 @@ también el intercom, la radio y la batería del casco.
 - **Ubicación:** «¿dónde estoy?», «mándale mi ubicación a Juan».
 - **Batería del móvil** y avisos automáticos de batería baja.
 
-**Con cascos Cardo de la familia PackTalk / Freecom (protocolo clásico):**
+**Control del casco Cardo:**
 
 - Cambiar entre intercom **DMC** y **Bluetooth** (sabiendo en cuál estás).
 - Silenciar el grupo DMC, tu micrófono, abrir y cortar el intercom.
 - **Radio FM:** encender, apagar, buscar, emisoras guardadas.
 - Compartir música o radio.
-- **Batería del casco** y diagnóstico.
+- **Batería del casco**, avisos de batería baja y diagnóstico.
 
 **Entiende frases naturales.** No hace falta saberse las órdenes: «tengo notificaciones de
 WhatsApp», «está muy fuerte», «pásate al DMC»… Y si activas la IA opcional, entiende casi cualquier
@@ -37,9 +50,12 @@ forma de decirlo.
 
 1. Instala el APK (ver *Releases*) o compílalo (ver abajo).
 2. Abre HelmVox y concede los permisos de la tarjeta **Permisos** (todo en verde).
-3. En tu intercom, activa el **asistente de voz del teléfono**: con el botón del casco o diciendo
-   «Ok Google» si tu casco lo admite. HelmVox se abrirá en su lugar.
-4. Oirás un pitido: di lo que quieras.
+3. En tu Cardo, activa el **asistente de voz del teléfono**: con el botón del casco o diciendo
+   «Ok Google» (requiere los comandos de voz avanzados activados en Cardo Connect).
+   HelmVox se abrirá en su lugar.
+4. Para las funciones del casco, **cierra Cardo Connect**: ambas apps no pueden usar el canal de
+   control del casco a la vez.
+5. Oirás un pitido: di lo que quieras.
 
 ## IA opcional (con tu propia clave)
 
