@@ -92,6 +92,19 @@ Requisitos: Android Studio (o JDK 17 + Android SDK 36).
 
 El APK queda en `app/build/outputs/apk/debug/`. Pruebas: `./gradlew testDebugUnitTest`.
 
+## Cómo se hizo y cómo colaborar
+
+Las funciones del casco (DMC/Bluetooth, radio, batería…) existen porque **analizamos cómo la app
+oficial se comunica con el casco**, con el único fin de que HelmVox pueda **interoperar** con él.
+Todo lo aprendido está documentado como datos técnicos en **[PROTOCOL.md](PROTOCOL.md)**, sin código
+ni firmware de Cardo.
+
+**¿Tienes otro modelo?** Con el mismo método puedes ayudar a añadirlo: en
+**[CONTRIBUTING.md](CONTRIBUTING.md)** explicamos paso a paso cómo grabar el tráfico Bluetooth de la
+app oficial y qué compartir (y qué no). Los modelos más pedidos son los Cardo nuevos (PackTalk Edge,
+Neo, Outdoor), que usan Bluetooth LE. También se agradecen frases que la app no entienda, en
+español o inglés.
+
 ## Aviso legal
 
 HelmVox es un proyecto independiente **sin relación alguna con Cardo Systems**. Cardo, PackTalk y
@@ -129,6 +142,11 @@ listens to → English**, then trigger your phone's voice assistant from the hel
 
 **Compatibility:** tested on Cardo PackTalk and PackTalk Bold. Newer Cardo models (PackTalk Edge,
 Neo, Outdoor) use a different protocol and the helmet controls won't work there.
+
+**How it was built / contributing:** the helmet features come from observing how the official app
+talks to the helmet, for interoperability only. The protocol is documented as byte-level facts in
+[PROTOCOL.md](PROTOCOL.md). Have another model? [CONTRIBUTING.md](CONTRIBUTING.md) explains how to
+capture its Bluetooth traffic and share it (no third-party code or firmware, please).
 
 *Not affiliated with Cardo Systems. Ride safe.*
 

@@ -1,0 +1,52 @@
+name: Nuevo dispositivo / New device
+description: Cuéntanos cómo funciona HelmVox con tu intercomunicador o aporta datos de su protocolo.
+title: "[Dispositivo] "
+labels: ["dispositivo"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por ayudar. Antes de enviar, lee las reglas de [CONTRIBUTING.md](https://github.com/robdi123/helmvox/blob/main/CONTRIBUTING.md):
+        **no subas código decompilado, firmware ni datos personales** (tapa direcciones Bluetooth, nombres y números).
+  - type: input
+    id: modelo
+    attributes:
+      label: Modelo exacto / Exact model
+      placeholder: "Cardo PackTalk Edge"
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: Versión de firmware / Firmware version
+      placeholder: "5.2"
+  - type: input
+    id: movil
+    attributes:
+      label: Móvil y versión de Android / Phone and Android version
+      placeholder: "Samsung S24 Ultra, Android 16"
+  - type: checkboxes
+    id: funciona
+    attributes:
+      label: ¿Qué funciona? / What works?
+      options:
+        - label: El asistente se abre desde el casco (botón u «Ok Google»)
+        - label: Mensajes, música, rutas y llamadas
+        - label: Cambio DMC / Bluetooth
+        - label: Radio FM
+        - label: Batería del casco
+        - label: Diagnóstico del casco
+  - type: textarea
+    id: paquetes
+    attributes:
+      label: Paquetes capturados (opcional) / Captured packets (optional)
+      description: Acción realizada, bytes en hexadecimal y respuesta del casco. Si es BLE, UUID de servicio y característica.
+      placeholder: |
+        Acción: cambiar a DMC (3 veces)
+        Enviado: 09 03 20 00 CB 00
+        Respuesta: 09 68 81 …
+      render: text
+  - type: textarea
+    id: notas
+    attributes:
+      label: Notas / Notes

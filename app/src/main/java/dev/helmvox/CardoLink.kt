@@ -11,8 +11,8 @@ import java.io.IOException
 import java.util.UUID
 
 /**
- * Canal de control del casco Cardo (protocolo "CAIP9" de los modelos clásicos como el
- * PackTalk Bold), tal y como lo usa la app Cardo Connect:
+ * Canal de control de los cascos Cardo clásicos (PackTalk, PackTalk Bold…). El protocolo está
+ * documentado en PROTOCOL.md; resumen:
  *   - RFCOMM (puerto serie Bluetooth), canal 12.
  *   - Cada paquete: [versión][longitud de datos][código][datos…], sin checksum.
  *   - Los "eventos" (código 0x20) llevan como datos: [0][evento][nº parámetros][parámetros…].
@@ -44,29 +44,29 @@ object CardoLink {
     private const val OP_SERVICE_UPDATE = 0x82 // [ver][len][0x82][servicio][?][estado…]
     private const val SERVICE_BATTERY = 0x01
 
-    /** GetVersion: Cardo Connect lo envía nada más conectar. */
+    /** Saludo inicial: petición de versión, el casco responde con su versión de protocolo. */
     private val GET_VERSION = byteArrayOf(0x03, 0x00, 0x00)
 
     /**
-     * Eventos del casco sacados de Cardo Connect (com.cardo.bluetooth.packet.messeges.*).
+     * Eventos del casco (ver PROTOCOL.md, "Eventos").
      * [profile] es el primer byte de los datos: 0x00 en general, 0x60 en los de teléfono.
      */
     enum class Event(val code: Int, val profile: Int = 0x00) {
-        DMC_BT_SWITCH(0xCB), // DMCtoICSwitch: alterna DMC ⇄ Bluetooth (solo con el casco en reposo)
-        DMC_GROUP_MUTE(0xF2), // DMCMuteGroup
-        DMC_TALK(0xF1), // DMCTalkToggle
-        FM_ON(0x02), // FMPower(true)
-        FM_OFF(0x03), // FMPower(false)
-        FM_SEEK_UP(0x07), // FMSeek(UP)
-        FM_SEEK_DOWN(0x06), // FMSeek(DOWN)
-        FM_PRESET(0xBB), // FMPlayStation(n), n = 1…6
-        MUSIC_SHARE(0x2D), // MusicShareStartStop: empieza / deja de compartir la música
-        IC_CALL(0x9E), // ICStartChannelCall(canal): A = 1, B = 2, C = 3
-        IC_END(0x17), // ICEndCall(canal)
-        PHONE_REDIAL(0x05, profile = 0x60), // PhoneRedial
+        DMC_BT_SWITCH(0xCB), // alterna intercom DMC ⇄ Bluetooth (solo con el casco en reposo)
+        DMC_GROUP_MUTE(0xF2), // silencia / reactiva el grupo DMC
+        DMC_TALK(0xF1), // abre / cierra tu micrófono hacia el grupo DMC
+        FM_ON(0x02), // enciende la radio FM
+        FM_OFF(0x03), // apaga la radio FM
+        FM_SEEK_UP(0x07), // busca la emisora siguiente
+        FM_SEEK_DOWN(0x06), // busca la emisora anterior
+        FM_PRESET(0xBB), // emisora guardada n (parámetro), n = 1…6
+        MUSIC_SHARE(0x2D), // empieza / deja de compartir la música
+        IC_CALL(0x9E), // abre el intercom Bluetooth (parámetro: canal A = 1, B = 2, C = 3)
+        IC_END(0x17), // corta el intercom Bluetooth (parámetro: canal)
+        PHONE_REDIAL(0x05, profile = 0x60), // repite la última llamada
     }
 
-    /** FMSharingToogle: código propio (0x28) y sin datos. */
+    /** Compartir la radio FM: código de operación propio (0x28) y sin datos. */
     private const val OP_FM_SHARE_TOGGLE: Byte = 0x28
 
     sealed interface Result {
@@ -90,7 +90,7 @@ object CardoLink {
 
     /**
      * Batería del casco en %, aproximada: el casco solo informa por tramos
-     * (0, 20, 50, 75, 80, 100, igual que muestra Cardo Connect). Bloqueante.
+     * (0, 20, 50, 75, 80, 100). Bloqueante.
      */
     fun readBattery(ctx: Context): Int? {
         var percent: Int? = null
@@ -197,7 +197,7 @@ object CardoLink {
                 ?: Log.i(TAG, "sin respuesta a $label")
         }
 
-        /** Lee el ajuste "packtalkToogle" (nº 19): true = DMC, false = Bluetooth, null = no lo sé. */
+        /** Lee el ajuste nº 19 (modo de intercom): true = DMC, false = Bluetooth, null = no lo sé. */
         fun readDmcMode(): Boolean? {
             val frame = readSettings(listOf(SETTING_PACKTALK_TOGGLE)) ?: return null
             return settingValue(frame, SETTING_PACKTALK_TOGGLE)?.firstOrNull()?.let { it.toInt() == 1 }
@@ -257,7 +257,7 @@ object CardoLink {
     internal fun isBatteryUpdate(frame: ByteArray) =
         frame.size >= 6 && (frame[2].toInt() and 0xFF) == OP_SERVICE_UPDATE && frame[3].toInt() == SERVICE_BATTERY
 
-    /** Estado de batería (byte 5 del aviso del servicio) → % según BatteryStatusService de Cardo. */
+    /** Estado de batería (byte 5 del aviso del servicio) → % aproximado (ver PROTOCOL.md). */
     internal fun batteryPercent(frame: ByteArray): Int? = when (frame.getOrNull(5)?.toInt()) {
         0 -> 0
         1 -> 20
@@ -296,7 +296,7 @@ object CardoLink {
     private fun open(device: BluetoothDevice): BluetoothSocket? {
         val attempts = buildList<() -> BluetoothSocket> {
             add {
-                // Igual que Cardo Connect: canal fijo, sin consulta SDP.
+                // Canal RFCOMM fijo (12), sin consulta SDP.
                 device.javaClass.getMethod("createRfcommSocket", Int::class.javaPrimitiveType)
                     .invoke(device, RFCOMM_CHANNEL) as BluetoothSocket
             }
