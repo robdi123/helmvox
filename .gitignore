@@ -1,0 +1,17 @@
+# Compilación
+build/
+.gradle/
+.kotlin/
+*.apk
+*.aab
+
+# Local de cada máquina (ruta del SDK, IDE)
+local.properties
+.idea/
+*.iml
+.DS_Store
+
+# Nunca subir claves
+*.jks
+*.keystore
+secrets.properties

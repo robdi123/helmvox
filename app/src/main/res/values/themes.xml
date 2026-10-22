@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.HelmVox" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/primary</item>
+        <item name="android:colorPrimaryDark">@color/bg</item>
+        <item name="android:colorAccent">@color/primary</item>
+        <item name="android:colorBackground">@color/bg</item>
+        <item name="android:colorBackgroundFloating">@color/surface_variant</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
+        <item name="android:textColorPrimary">@color/text</item>
+        <item name="android:textColorSecondary">@color/text_muted</item>
+        <item name="android:colorControlNormal">@color/text_muted</item>
+        <item name="android:colorControlActivated">@color/primary</item>
+        <item name="android:alertDialogTheme">@style/Theme.HelmVox.Dialog</item>
+    </style>
+
+    <style name="Theme.HelmVox.Dialog" parent="android:Theme.Material.Dialog.Alert">
+        <item name="android:colorAccent">@color/primary</item>
+        <item name="android:colorBackground">@color/surface</item>
+        <item name="android:textColorPrimary">@color/text</item>
+        <item name="android:textColorSecondary">@color/text_muted</item>
+    </style>
+
+    <!-- Pantalla de voz: panel sobre lo que haya debajo, con el fondo oscurecido. -->
+    <style name="Theme.HelmVox.Overlay" parent="Theme.HelmVox">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimAmount">0.6</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@color/surface</item>
+    </style>
+</resources>
