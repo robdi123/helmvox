@@ -81,7 +81,7 @@ está pensada para no tener que mirar el móvil.
 ## Apoya el proyecto
 
 HelmVox es gratis y de código abierto. Si te sirve en la ruta, puedes
-regalarme un café ☕ (enlace próximamente).
+[regalarme un café ☕](https://buymeacoffee.com/SpawnRipple).
 
 ## Licencia
 

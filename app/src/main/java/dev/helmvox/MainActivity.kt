@@ -275,7 +275,7 @@ class MainActivity : Activity() {
 
     private companion object {
         /** Enlace de "Regálame un café" (Buy Me a Coffee, Ko-fi…). Vacío = no se muestra la tarjeta. */
-        const val COFFEE_URL = ""
+        const val COFFEE_URL = "https://buymeacoffee.com/SpawnRipple"
 
         val COMMANDS = listOf(
             "Ruta" to listOf("Navega a… / Llévame a…", "A casa / Al trabajo", "Bencinera / Gasolinera"),
