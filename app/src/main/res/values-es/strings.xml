@@ -79,6 +79,9 @@
     <string name="ai_enable">Usar IA cuando no entienda</string>
     <string name="ai_key_label">Clave de API de Anthropic</string>
     <string name="ai_model_label">Modelo</string>
+    <string name="ai_workspace_label">ID de workspace (solo claves de organización)</string>
+    <string name="ai_workspace_hint">Si tu clave tiene alcance «Organización», copia el ID en console.anthropic.com → Ajustes → Espacios de trabajo. Las claves creadas dentro de un workspace no lo necesitan.</string>
+    <string name="ai_err_workspace">tu clave es de organización: rellena el ID de workspace o crea la clave dentro de un workspace</string>
     <string name="ai_model_opus">Opus 5.5 · el más listo</string>
     <string name="ai_model_sonnet">Sonnet 5.5 · equilibrado</string>
     <string name="ai_model_haiku">Haiku 5.5 · rápido y barato</string>

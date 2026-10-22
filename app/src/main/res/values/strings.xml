@@ -81,6 +81,9 @@
     <string name="ai_enable">Use AI when it doesn\'t understand</string>
     <string name="ai_key_label">Anthropic API key</string>
     <string name="ai_model_label">Model</string>
+    <string name="ai_workspace_label">Workspace ID (only for organization keys)</string>
+    <string name="ai_workspace_hint">If your key\'s scope is «Organization», copy the ID from console.anthropic.com → Settings → Workspaces. Workspace keys don\'t need it.</string>
+    <string name="ai_err_workspace">your key is organization-wide: fill in the workspace ID, or create the key inside a workspace</string>
     <string name="ai_model_opus">Opus 5.5 · the smartest</string>
     <string name="ai_model_sonnet">Sonnet 5.5 · balanced</string>
     <string name="ai_model_haiku">Haiku 5.5 · fast and cheap</string>

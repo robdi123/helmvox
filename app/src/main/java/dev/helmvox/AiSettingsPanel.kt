@@ -22,6 +22,7 @@ class AiSettingsPanel(private val activity: Activity) : LinearLayout(activity) {
     private val ui = Ui(activity)
     private val enabledSwitch = Switch(activity)
     private val keyField = EditText(activity)
+    private val workspaceField = EditText(activity)
     private val modelSpinner = Spinner(activity)
     private val status = ui.text("", 13f, R.color.text_muted).apply { setPadding(ui.dp(4), ui.dp(8), 0, 0) }
 
@@ -57,6 +58,23 @@ class AiSettingsPanel(private val activity: Activity) : LinearLayout(activity) {
         }
         addView(keyField)
 
+        addView(label(context.getString(R.string.ai_workspace_label)))
+        workspaceField.apply {
+            setText(AiPrefs.workspaceId(context))
+            hint = "wrkspc_…"
+            setSingleLine()
+            textSize = 15f
+            setTextColor(ui.color(R.color.text))
+            setHintTextColor(ui.color(R.color.text_muted))
+            background = ui.rounded(R.color.surface_variant, 12)
+            setPadding(ui.dp(14), ui.dp(14), ui.dp(14), ui.dp(14))
+            setOnFocusChangeListener { _, focused -> if (!focused) save() }
+        }
+        addView(workspaceField)
+        addView(ui.text(context.getString(R.string.ai_workspace_hint), 12f, R.color.text_muted).apply {
+            setPadding(ui.dp(4), ui.dp(6), 0, 0)
+        })
+
         addView(label(context.getString(R.string.ai_model_label)))
         modelSpinner.adapter = ArrayAdapter(
             context, android.R.layout.simple_spinner_dropdown_item, AiModel.entries.map { context.getString(it.labelRes) },
@@ -85,7 +103,7 @@ class AiSettingsPanel(private val activity: Activity) : LinearLayout(activity) {
 
     private fun save() {
         val model = AiModel.entries.getOrElse(modelSpinner.selectedItemPosition) { AiModel.OPUS }
-        AiPrefs.save(context, enabledSwitch.isChecked, keyField.text.toString(), model)
+        AiPrefs.save(context, enabledSwitch.isChecked, keyField.text.toString(), model, workspaceField.text.toString())
     }
 
     private fun test() {
@@ -115,6 +133,7 @@ class AiSettingsPanel(private val activity: Activity) : LinearLayout(activity) {
         AiParser.Failure.BAD_KEY -> context.getString(R.string.ai_err_bad_key)
         AiParser.Failure.SERVICE -> context.getString(R.string.ai_err_service, f.status)
         AiParser.Failure.NETWORK -> context.getString(R.string.ai_err_network)
+        AiParser.Failure.NEEDS_WORKSPACE -> context.getString(R.string.ai_err_workspace)
     }
 
     private fun label(text: String) = ui.text(text, 13f, R.color.text_muted).apply {

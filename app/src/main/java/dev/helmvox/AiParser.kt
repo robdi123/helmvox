@@ -32,10 +32,14 @@ object AiPrefs {
     fun model(ctx: Context) =
         prefs(ctx).getString("model", null)?.let { id -> AiModel.entries.firstOrNull { it.id == id } } ?: AiModel.OPUS
 
-    fun save(ctx: Context, enabled: Boolean, apiKey: String, model: AiModel) {
+    /** Solo para claves con alcance de organización: el workspace al que se carga el uso. */
+    fun workspaceId(ctx: Context) = prefs(ctx).getString("workspace_id", "").orEmpty()
+
+    fun save(ctx: Context, enabled: Boolean, apiKey: String, model: AiModel, workspaceId: String) {
         prefs(ctx).edit()
             .putBoolean("enabled", enabled)
             .putString("api_key", apiKey.trim())
+            .putString("workspace_id", workspaceId.trim())
             .putString("model", model.id)
             .apply()
     }
@@ -58,7 +62,7 @@ object AiParser {
         data class Failed(val kind: Failure, val status: Int = 0) : Result
     }
 
-    enum class Failure { NO_KEY, BAD_KEY, SERVICE, NETWORK }
+    enum class Failure { NO_KEY, BAD_KEY, NEEDS_WORKSPACE, SERVICE, NETWORK }
 
     private var client: AnthropicClient? = null
     private var clientKey: String? = null
@@ -92,6 +96,8 @@ object AiParser {
                 )
                 .addUserMessage(heard)
                 .apply {
+                    // Las claves de organización necesitan saber a qué workspace cargar el uso.
+                    AiPrefs.workspaceId(ctx).takeIf { it.isNotBlank() }?.let { putAdditionalHeader("anthropic-workspace-id", it) }
                     // Si el modelo rechazara la petición, que el servidor la reintente con otro modelo.
                     if (model != AiModel.HAIKU) {
                         putAdditionalHeader("anthropic-beta", "server-side-fallback-2026-07-01")
@@ -110,7 +116,11 @@ object AiParser {
             Result.Failed(Failure.BAD_KEY)
         } catch (e: AnthropicServiceException) {
             Log.w(TAG, "error de la API", e)
-            Result.Failed(Failure.SERVICE, e.statusCode())
+            if (e.statusCode() == 400 && e.message.orEmpty().contains("anthropic-workspace-id")) {
+                Result.Failed(Failure.NEEDS_WORKSPACE)
+            } else {
+                Result.Failed(Failure.SERVICE, e.statusCode())
+            }
         } catch (e: Exception) {
             Log.w(TAG, "fallo llamando a la IA", e)
             Result.Failed(Failure.NETWORK)
