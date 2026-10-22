@@ -31,18 +31,17 @@ class AiSettingsPanel(private val activity: Activity) : LinearLayout(activity) {
         setPadding(ui.dp(16), ui.dp(16), ui.dp(16), ui.dp(16))
         layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = ui.dp(12) }
 
-        addView(ui.cardTitle(R.drawable.ic_spark, "Inteligencia artificial"))
+        addView(ui.cardTitle(R.drawable.ic_spark, context.getString(R.string.card_ai)))
         addView(ui.text(
-            "Opcional. Si la app no entiende una frase y hay internet, se la pregunta a Claude con " +
-                "tu propia clave de API. Sin clave o sin cobertura, todo sigue funcionando en local.",
+            context.getString(R.string.ai_intro),
             14f, R.color.text_muted,
         ).apply { setPadding(ui.dp(4), 0, 0, ui.dp(4)) })
 
         enabledSwitch.isChecked = AiPrefs.enabled(context)
         enabledSwitch.setOnCheckedChangeListener { _, _ -> save() }
-        addView(ui.row(R.drawable.ic_spark, "Usar IA cuando no entienda", null, enabledSwitch))
+        addView(ui.row(R.drawable.ic_spark, context.getString(R.string.ai_enable), null, enabledSwitch))
 
-        addView(label("Clave de API de Anthropic"))
+        addView(label(context.getString(R.string.ai_key_label)))
         keyField.apply {
             setText(AiPrefs.apiKey(context))
             hint = "sk-ant-…"
@@ -58,9 +57,9 @@ class AiSettingsPanel(private val activity: Activity) : LinearLayout(activity) {
         }
         addView(keyField)
 
-        addView(label("Modelo"))
+        addView(label(context.getString(R.string.ai_model_label)))
         modelSpinner.adapter = ArrayAdapter(
-            context, android.R.layout.simple_spinner_dropdown_item, AiModel.entries.map { it.label },
+            context, android.R.layout.simple_spinner_dropdown_item, AiModel.entries.map { context.getString(it.labelRes) },
         )
         modelSpinner.setSelection(AiModel.entries.indexOf(AiPrefs.model(context)))
         modelSpinner.background = null
@@ -77,8 +76,8 @@ class AiSettingsPanel(private val activity: Activity) : LinearLayout(activity) {
             ))
         })
 
-        addView(ui.secondaryButton("Probar con «ponme algo para escuchar»") { test() })
-        addView(ui.secondaryButton("Conseguir una clave en console.anthropic.com") {
+        addView(ui.secondaryButton(context.getString(R.string.ai_test)) { test() })
+        addView(ui.secondaryButton(context.getString(R.string.ai_get_key)) {
             activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://console.anthropic.com/")))
         })
         addView(status)
@@ -92,22 +91,30 @@ class AiSettingsPanel(private val activity: Activity) : LinearLayout(activity) {
     private fun test() {
         save()
         if (AiPrefs.apiKey(context).isBlank()) {
-            status.text = "Pega primero tu clave de API."
+            status.text = context.getString(R.string.ai_paste_key)
             return
         }
-        status.text = "Preguntando a Claude…"
+        status.text = context.getString(R.string.ai_asking)
         Thread {
             val started = System.currentTimeMillis()
-            val result = AiParser.parse(context, "ponme algo para escuchar")
+            val sample = if (VoicePrefs.load(context).lang == Lang.EN) "put something on to listen to" else "ponme algo para escuchar"
+            val result = AiParser.parse(context, sample)
             val ms = System.currentTimeMillis() - started
             activity.runOnUiThread {
                 status.text = when (result) {
-                    is AiParser.Result.Understood -> "✔ Funciona (${ms} ms): entendió ${result.command}."
-                    AiParser.Result.NotACommand -> "Respondió, pero no reconoció la orden (${ms} ms)."
-                    is AiParser.Result.Failed -> "✖ No funcionó: ${result.reason}."
+                    is AiParser.Result.Understood -> context.getString(R.string.ai_ok, ms.toInt(), result.command.toString())
+                    AiParser.Result.NotACommand -> context.getString(R.string.ai_not_command, ms.toInt())
+                    is AiParser.Result.Failed -> context.getString(R.string.ai_failed, failure(result))
                 }
             }
         }.start()
+    }
+
+    private fun failure(f: AiParser.Result.Failed) = when (f.kind) {
+        AiParser.Failure.NO_KEY -> context.getString(R.string.ai_err_no_key)
+        AiParser.Failure.BAD_KEY -> context.getString(R.string.ai_err_bad_key)
+        AiParser.Failure.SERVICE -> context.getString(R.string.ai_err_service, f.status)
+        AiParser.Failure.NETWORK -> context.getString(R.string.ai_err_network)
     }
 
     private fun label(text: String) = ui.text(text, 13f, R.color.text_muted).apply {

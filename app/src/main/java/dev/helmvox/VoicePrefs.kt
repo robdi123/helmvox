@@ -13,10 +13,19 @@ data class VoicePrefs(
     val listenLocale: String = defaultListenLocale(),
     val volume: Float = 0.6f, // 0,1 a 1,0: volumen propio de la voz, sobre el del canal
 ) {
+    /** Idioma de la conversación, según el acento elegido. */
+    val lang: Lang get() = if (listenLocale.startsWith("en")) Lang.EN else Lang.ES
+
     /** Aplica voz, velocidad y tono a un TTS ya inicializado. */
     fun applyTo(tts: TextToSpeech) {
-        // Los motores solo traen voces de España y de Latinoamérica (es-US): el resto de acentos usa es-US.
-        tts.language = Locale.forLanguageTag(if (listenLocale == "es-ES") "es-ES" else "es-US")
+        // En español los motores solo traen España y Latinoamérica (es-US): el resto de acentos usa es-US.
+        tts.language = Locale.forLanguageTag(
+            when {
+                lang == Lang.EN -> listenLocale
+                listenLocale == "es-ES" -> "es-ES"
+                else -> "es-US"
+            }
+        )
         voice?.let { name -> runCatching { tts.voices }.getOrNull()?.firstOrNull { it.name == name } }
             ?.let { tts.voice = it }
         tts.setSpeechRate(rate)
@@ -43,21 +52,17 @@ data class VoicePrefs(
         private const val KEY_LISTEN = "listen"
         private const val KEY_VOLUME = "volume"
 
-        /** Acentos para el reconocimiento de voz (etiqueta → etiqueta de idioma). */
-        val LISTEN_LOCALES = linkedMapOf(
-            "Chile" to "es-CL",
-            "Argentina" to "es-AR",
-            "México" to "es-MX",
-            "Colombia" to "es-CO",
-            "Perú" to "es-PE",
-            "Latinoamérica (general)" to "es-US",
-            "España (castellano)" to "es-ES",
+        /** Acentos para el reconocimiento de voz (etiquetas de idioma); el nombre lo pone la pantalla. */
+        val LISTEN_LOCALES = listOf(
+            "es-CL", "es-AR", "es-MX", "es-CO", "es-PE", "es-US", "es-ES",
+            "en-US", "en-GB", "en-AU", "en-IN",
         )
 
-        /** El del móvil si es un español conocido; si no, español latinoamericano. */
+        /** El del móvil si está en la lista; si no, inglés (US) o español latinoamericano según su idioma. */
         private fun defaultListenLocale(): String {
-            val tag = Locale.getDefault().toLanguageTag()
-            return LISTEN_LOCALES.values.firstOrNull { it.equals(tag, ignoreCase = true) } ?: "es-US"
+            val device = Locale.getDefault()
+            LISTEN_LOCALES.firstOrNull { it.equals(device.toLanguageTag(), ignoreCase = true) }?.let { return it }
+            return if (device.language == "en") "en-US" else "es-US"
         }
 
         fun load(ctx: Context): VoicePrefs {

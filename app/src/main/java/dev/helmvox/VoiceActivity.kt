@@ -42,8 +42,11 @@ class VoiceActivity : Activity() {
     /** Cada escucha tiene un número; los avisos de escuchas anteriores se ignoran. */
     private var listenId = 0
 
-    /** Acento elegido; si el reconocedor no lo tiene, se cambia a español latinoamericano general. */
+    /** Acento elegido; si el reconocedor no lo tiene, se cambia al general de su idioma. */
     private val listenLocale by lazy { VoicePrefs.load(this).listenLocale }
+    private val lang by lazy { VoicePrefs.load(this).lang }
+    private val ph by lazy { Phrases(lang) }
+    private val fallbackLocale get() = if (lang == Lang.EN) "en-US" else "es-US"
     private var localeOverride: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,7 +65,7 @@ class VoiceActivity : Activity() {
             return
         }
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            show("Este móvil no tiene reconocimiento de voz disponible.")
+            show(ph.noRecognizer())
             return
         }
 
@@ -79,7 +82,7 @@ class VoiceActivity : Activity() {
                 message != null -> announceMessages(listOf(message))
                 announce -> done() // el mensaje ya no está (reinicio de la app): nada que leer
                 else -> {
-                    show(if (sco) "Di una orden" else "Sin casco: te escucho por el micrófono del móvil")
+                    show(if (sco) ph.sayCommand() else ph.noHeadsetMic())
                     listen(::onCommand)
                 }
             }
@@ -161,9 +164,9 @@ class VoiceActivity : Activity() {
             SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT ->
                 if (retries < MAX_RETRIES) {
                     retries++
-                    ask("No te oigo, repite.") { listen(onText) }
+                    ask(ph.didntHear()) { listen(onText) }
                 } else {
-                    say("Vale, lo dejo.") { done() }
+                    say(ph.givingUp()) { done() }
                 }
 
             // Fallos del propio servicio (ocupado, desconectado…): se recrea y se reintenta sin decir nada.
@@ -175,21 +178,20 @@ class VoiceActivity : Activity() {
                     recognizer = null
                     main.postDelayed({ startRecognizer(onText) }, 600)
                 } else {
-                    say("El reconocimiento de voz no responde.") { done() }
+                    say(ph.recognizerDown()) { done() }
                 }
 
             SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED, SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE ->
-                if (localeOverride == null && listenLocale != FALLBACK_LOCALE) {
-                    Log.w(TAG, "el reconocedor no tiene $listenLocale; uso $FALLBACK_LOCALE")
-                    localeOverride = FALLBACK_LOCALE
+                if (localeOverride == null && listenLocale != fallbackLocale) {
+                    Log.w(TAG, "el reconocedor no tiene $listenLocale; uso $fallbackLocale")
+                    localeOverride = fallbackLocale
                     main.postDelayed({ startRecognizer(onText) }, 300)
                 } else {
-                    say("El reconocimiento de voz no tiene este idioma instalado.") { done() }
+                    say(ph.languageMissing()) { done() }
                 }
 
             else -> {
-                show("Error del reconocedor ($error)")
-                say("Error de reconocimiento, código $error.") { done() }
+                say(ph.recognitionError(error)) { done() }
             }
         }
     }
@@ -199,7 +201,7 @@ class VoiceActivity : Activity() {
     private fun onCommand(heard: List<String>) {
         show("«${heard.first()}»")
         sheet.setState(VoiceSheet.State.THINKING)
-        val cmd = heard.firstNotNullOfOrNull(CommandParser::parse)
+        val cmd = heard.firstNotNullOfOrNull { CommandParser.parse(it, lang) }
         Log.i(TAG, "comando: $cmd")
         when {
             cmd != null -> execute(cmd)
@@ -218,17 +220,17 @@ class VoiceActivity : Activity() {
     private fun notUnderstood() {
         if (retries < MAX_RETRIES) {
             retries++
-            ask("No te entendí. Puedo ayudarte con mensajes, música, rutas, llamadas, batería, la radio o el casco. Dime.") {
+            ask(ph.notUnderstood()) {
                 listen(::onCommand)
             }
         } else {
-            say("Tampoco te entendí. Inténtalo otra vez cuando quieras.") { done() }
+            say(ph.notUnderstoodAgain()) { done() }
         }
     }
 
     private fun execute(cmd: Command) {
         when (cmd) {
-            is Command.Navigate -> say("Navegando a ${cmd.destination}.") {
+            is Command.Navigate -> say(ph.navigating(cmd.destination)) {
                 releaseAudio()
                 Actions.navigate(this, cmd.destination)
                 done()
@@ -236,8 +238,8 @@ class VoiceActivity : Activity() {
 
             is Command.Call -> {
                 val contact = Actions.findContact(this, cmd.who)
-                    ?: return say("No encuentro a ${cmd.who} en tus contactos.") { done() }
-                say("Llamando a ${contact.name}.") {
+                    ?: return say(ph.contactNotFound(cmd.who)) { done() }
+                say(ph.calling(contact.name)) {
                     releaseAudio()
                     Actions.call(this, contact.number)
                     done()
@@ -246,15 +248,15 @@ class VoiceActivity : Activity() {
 
             is Command.Message -> {
                 val contact = Actions.findContact(this, cmd.who)
-                    ?: return say("No encuentro a ${cmd.who} en tus contactos.") { done() }
+                    ?: return say(ph.contactNotFound(cmd.who)) { done() }
                 retries = MAX_RETRIES // en la confirmación no reintentamos: si no se oye, no se envía
-                ask("¿Envío a ${contact.name}: ${cmd.text}?") {
+                ask(ph.confirmMessage(contact.name, cmd.text)) {
                     listen { answer ->
-                        if (answer.any(CommandParser::isYes)) {
+                        if (answer.any { CommandParser.isYes(it, lang) }) {
                             val sent = Actions.sms(this, contact.number, cmd.text)
-                            say(if (sent) "Enviado." else "Te lo dejo escrito en mensajes.") { done() }
+                            say(if (sent) ph.sent() else ph.leftInMessages()) { done() }
                         } else {
-                            say("Cancelado.") { done() }
+                            say(ph.cancelled()) { done() }
                         }
                     }
                 }
@@ -262,52 +264,52 @@ class VoiceActivity : Activity() {
 
             Command.ReadMessages -> {
                 val unread = MessageStore.unread()
-                if (unread.isEmpty()) say("No tienes mensajes nuevos.") { done() } else announceMessages(unread)
+                if (unread.isEmpty()) say(ph.noNewMessages()) { done() } else announceMessages(unread)
             }
 
             is Command.ShareLocation -> shareLocation(cmd.who)
             Command.WhereAmI -> whereAmI()
 
-            is Command.IntercomMode -> say("Vale.") {
+            is Command.IntercomMode -> say(ph.ok()) {
                 headsetCommand(STANDBY_WAIT_MS, { CardoLink.setIntercomMode(this, cmd.wantDmc) }) { r ->
                     when (r) {
-                        is CardoLink.Result.AlreadyInMode -> "Ya estás en modo ${modeName(r.dmc)}."
+                        is CardoLink.Result.AlreadyInMode -> ph.alreadyInMode(r.dmc)
                         else -> null // el propio casco anuncia el modo nuevo
                     }
                 }
             }
 
-            Command.DmcGroupMute -> say("Vale.") {
+            Command.DmcGroupMute -> say(ph.ok()) {
                 headsetCommand(HEADSET_WAIT_MS, { CardoLink.send(this, CardoLink.Event.DMC_GROUP_MUTE) }) { null }
             }
 
-            Command.DmcMic -> say("Vale.") {
+            Command.DmcMic -> say(ph.ok()) {
                 headsetCommand(HEADSET_WAIT_MS, { CardoLink.send(this, CardoLink.Event.DMC_TALK) }) { null }
             }
 
             is Command.Radio -> radio(cmd)
 
             // Compartir: al terminar se suelta el foco y la música vuelve a sonar, ya compartida.
-            Command.ShareMusic -> say("Vale.") {
+            Command.ShareMusic -> say(ph.ok()) {
                 headsetCommand(HEADSET_WAIT_MS, { CardoLink.send(this, CardoLink.Event.MUSIC_SHARE) }) { null }
             }
 
-            Command.ShareRadio -> say("Vale.") {
+            Command.ShareRadio -> say(ph.ok()) {
                 headsetCommand(HEADSET_WAIT_MS, { CardoLink.toggleRadioSharing(this) }) { null }
             }
 
-            is Command.IntercomCall -> say("Abriendo el intercom.") {
+            is Command.IntercomCall -> say(ph.openingIntercom()) {
                 headsetCommand(
                     HEADSET_WAIT_MS,
                     { CardoLink.send(this, CardoLink.Event.IC_CALL, cmd.channel) },
                 ) { null }
             }
 
-            Command.IntercomEnd -> say("Cerrando el intercom.") {
+            Command.IntercomEnd -> say(ph.closingIntercom()) {
                 headsetCommand(HEADSET_WAIT_MS, { CardoLink.endIntercom(this) }) { null }
             }
 
-            Command.Redial -> say("Repitiendo la última llamada.") {
+            Command.Redial -> say(ph.redialing()) {
                 headsetCommand(HEADSET_WAIT_MS, { CardoLink.send(this, CardoLink.Event.PHONE_REDIAL) }) { null }
             }
 
@@ -324,11 +326,11 @@ class VoiceActivity : Activity() {
                 }, 700)
             }
 
-            is Command.PlaySearch -> say("Poniendo ${cmd.query}.") {
+            is Command.PlaySearch -> say(ph.playing(cmd.query)) {
                 releaseAudio()
                 main.postDelayed({
                     if (Actions.playFromSearch(this, cmd.query)) done()
-                    else say("No encuentro ninguna app de música.") { done() }
+                    else say(ph.noMusicApp()) { done() }
                 }, 500)
             }
 
@@ -336,12 +338,12 @@ class VoiceActivity : Activity() {
 
             Command.Time -> {
                 val now = LocalTime.now()
-                say("Son las ${now.hour} y ${"%02d".format(now.minute)}.") { done() }
+                say(ph.time(now.hour, now.minute)) { done() }
             }
 
             is Command.Battery -> battery(cmd.of)
-            Command.Help -> say(HELP) { done() }
-            Command.Cancel -> say("Vale.") { done() }
+            Command.Help -> say(ph.help()) { done() }
+            Command.Cancel -> say(ph.ok()) { done() }
         }
     }
 
@@ -352,30 +354,30 @@ class VoiceActivity : Activity() {
         messages.forEach { MessageStore.markRead(it.id) }
         val last = messages.last()
         val intro = if (messages.size == 1) {
-            "Mensaje de ${last.sender} por ${last.appLabel}: ${last.text}."
+            ph.oneMessage(last.sender, last.appLabel, last.text)
         } else {
-            "Tienes ${messages.size} mensajes. " + messages.joinToString(" ") { "De ${it.sender}: ${it.text}." }
+            ph.manyMessages(messages.map { it.sender to it.text })
         }
         if (!last.canReply) return say(intro) { done() }
         retries = MAX_RETRIES // en preguntas de sí/no no se reintenta: si no se oye, no se hace nada
-        ask("$intro ¿Respondes a ${last.sender}?") {
+        ask("$intro ${ph.replyTo(last.sender)}") {
             listen { answer ->
-                if (answer.any(CommandParser::isYes)) dictateReply(last) else say("Vale.") { done() }
+                if (answer.any { CommandParser.isYes(it, lang) }) dictateReply(last) else say(ph.ok()) { done() }
             }
         }
     }
 
     private fun dictateReply(msg: IncomingMessage) {
         retries = 0
-        ask("Dime la respuesta.") {
+        ask(ph.sayYourReply()) {
             listen { dictated ->
                 val text = dictated.first()
                 retries = MAX_RETRIES
-                ask("¿Envío: $text?") {
+                ask(ph.confirmReply(text)) {
                     listen { confirm ->
-                        if (!confirm.any(CommandParser::isYes)) return@listen say("Cancelado.") { done() }
+                        if (!confirm.any { CommandParser.isYes(it, lang) }) return@listen say(ph.cancelled()) { done() }
                         val sent = MessageStore.reply(this, msg, text)
-                        say(if (sent) "Enviado." else "No pude responder; la notificación ya no está.") { done() }
+                        say(if (sent) ph.sent() else ph.replyFailed()) { done() }
                     }
                 }
             }
@@ -385,27 +387,27 @@ class VoiceActivity : Activity() {
     // --- Ubicación ---
 
     private fun shareLocation(who: String) {
-        if (!Places.hasPermission(this)) return say("Falta el permiso de ubicación. Actívalo en HelmVox.") { done() }
+        if (!Places.hasPermission(this)) return say(ph.locationPermission()) { done() }
         show("…")
         sheet.setState(VoiceSheet.State.LOCATING)
         Thread {
             val loc = Places.current(this)
             main.post {
-                if (loc == null) return@post say("No consigo tu ubicación ahora mismo.") { done() }
-                val text = "Estoy aquí: ${Places.mapsLink(loc)}"
+                if (loc == null) return@post say(ph.noLocation()) { done() }
+                val text = ph.iAmHere(Places.mapsLink(loc))
                 // Si te escribió hace poco por WhatsApp, se responde en esa conversación; si no, SMS.
                 val chat = MessageStore.latestReplyableFrom(who)
                 val contact = if (chat == null) Actions.findContact(this, who) else null
                 val name = chat?.sender ?: contact?.name
-                    ?: return@post say("No encuentro a $who en tus contactos.") { done() }
+                    ?: return@post say(ph.contactNotFound(who)) { done() }
                 val via = chat?.appLabel ?: "SMS"
                 retries = MAX_RETRIES
-                ask("¿Envío tu ubicación a $name por $via?") {
+                ask(ph.confirmLocation(name, via)) {
                     listen { answer ->
-                        if (!answer.any(CommandParser::isYes)) return@listen say("Cancelado.") { done() }
+                        if (!answer.any { CommandParser.isYes(it, lang) }) return@listen say(ph.cancelled()) { done() }
                         val sent = if (chat != null) MessageStore.reply(this, chat, text)
                         else Actions.sms(this, contact!!.number, text)
-                        say(if (sent) "Ubicación enviada a $name." else "Te la dejo escrita en mensajes.") { done() }
+                        say(if (sent) ph.locationSent(name) else ph.leftInMessages()) { done() }
                     }
                 }
             }
@@ -413,7 +415,7 @@ class VoiceActivity : Activity() {
     }
 
     private fun whereAmI() {
-        if (!Places.hasPermission(this)) return say("Falta el permiso de ubicación. Actívalo en HelmVox.") { done() }
+        if (!Places.hasPermission(this)) return say(ph.locationPermission()) { done() }
         show("…")
         sheet.setState(VoiceSheet.State.LOCATING)
         Thread {
@@ -421,9 +423,9 @@ class VoiceActivity : Activity() {
             val place = loc?.let { Places.describe(this, it) }
             main.post {
                 val text = when {
-                    loc == null -> "No consigo tu ubicación ahora mismo."
-                    place == null -> "Tengo tu posición, pero sin internet no puedo decirte la dirección."
-                    else -> "Estás en $place."
+                    loc == null -> ph.noLocation()
+                    place == null -> ph.noAddress()
+                    else -> ph.youAreIn(place)
                 }
                 say(text) { done() }
             }
@@ -431,7 +433,7 @@ class VoiceActivity : Activity() {
     }
 
     private fun battery(of: BatteryOf) {
-        val phone = "El móvil está al ${Actions.batteryPercent(this)} por ciento."
+        val phone = ph.phoneBattery(Actions.batteryPercent(this))
         if (of == BatteryOf.PHONE) return say(phone) { done() }
         // Solo lectura: el casco responde aunque el canal de voz siga abierto.
         show("…")
@@ -439,11 +441,7 @@ class VoiceActivity : Activity() {
         Thread {
             val percent = CardoLink.readBattery(this)
             main.post {
-                val headset = when (percent) {
-                    null -> "No pude leer la batería del casco."
-                    0 -> "Al casco casi no le queda batería."
-                    else -> "El casco está más o menos al $percent por ciento."
-                }
+                val headset = ph.headsetBattery(percent)
                 say(if (of == BatteryOf.BOTH) "$headset $phone" else headset) { done() }
             }
         }.start()
@@ -451,11 +449,11 @@ class VoiceActivity : Activity() {
 
     private fun radio(cmd: Command.Radio) {
         val (text, event, params) = when (cmd.action) {
-            RadioAction.ON -> Triple("Encendiendo la radio.", CardoLink.Event.FM_ON, intArrayOf())
-            RadioAction.OFF -> Triple("Apagando la radio.", CardoLink.Event.FM_OFF, intArrayOf())
-            RadioAction.NEXT -> Triple("Buscando emisora.", CardoLink.Event.FM_SEEK_UP, intArrayOf())
-            RadioAction.PREVIOUS -> Triple("Buscando emisora.", CardoLink.Event.FM_SEEK_DOWN, intArrayOf())
-            RadioAction.STATION -> Triple("Emisora ${cmd.station}.", CardoLink.Event.FM_PRESET, intArrayOf(cmd.station))
+            RadioAction.ON -> Triple(ph.radioOn(), CardoLink.Event.FM_ON, intArrayOf())
+            RadioAction.OFF -> Triple(ph.radioOff(), CardoLink.Event.FM_OFF, intArrayOf())
+            RadioAction.NEXT -> Triple(ph.seekingStation(), CardoLink.Event.FM_SEEK_UP, intArrayOf())
+            RadioAction.PREVIOUS -> Triple(ph.seekingStation(), CardoLink.Event.FM_SEEK_DOWN, intArrayOf())
+            RadioAction.STATION -> Triple(ph.station(cmd.station), CardoLink.Event.FM_PRESET, intArrayOf(cmd.station))
         }
         say(text) {
             // La música del móvil le quitaría el sitio a la radio: se pausa de verdad, no solo por el foco.
@@ -488,8 +486,8 @@ class VoiceActivity : Activity() {
                 Log.i(TAG, "casco: $result")
                 main.post {
                     val text = when (result) {
-                        CardoLink.Result.NoHeadset -> "No encuentro el casco Cardo emparejado."
-                        is CardoLink.Result.Failed -> "No pude hablar con el casco. Cierra Cardo Connect y prueba otra vez."
+                        CardoLink.Result.NoHeadset -> ph.noHeadset()
+                        is CardoLink.Result.Failed -> ph.headsetFailed()
                         else -> reply(result)
                     }
                     if (text == null) done() else say(text) { done() }
@@ -497,8 +495,6 @@ class VoiceActivity : Activity() {
             }.start()
         }, waitMs)
     }
-
-    private fun modeName(dmc: Boolean) = if (dmc) "DMC" else "Bluetooth"
 
     /** Suelta el casco y espera a que vuelva la música antes de tocarla. */
     private fun afterAudio(action: () -> Unit) {
@@ -600,7 +596,6 @@ class VoiceActivity : Activity() {
 
         private const val TAG = "HelmVox"
         const val MAX_RETRIES = 1
-        const val FALLBACK_LOCALE = "es-US"
         // Cambio del canal de llamada al de música más el fundido de entrada del casco.
         const val A2DP_WARMUP_MS = 1300L
         const val MAX_RECOGNIZER_RESTARTS = 2
@@ -608,8 +603,5 @@ class VoiceActivity : Activity() {
         const val HEADSET_WAIT_MS = 1500L
         const val GOOGLE_APP = "com.google.android.googlequicksearchbox"
         const val GOOGLE_RECOGNIZER = "com.google.android.voicesearch.serviceapi.GoogleRecognitionService"
-        const val HELP = "Puedes decir: navega a, llama a, manda un mensaje a, lee mis mensajes, manda mi ubicación a, dónde estoy, pon la música, pon música de, " +
-            "siguiente, sube el volumen, cambia a modo DMC o Bluetooth, silencia el grupo, " +
-            "enciende la radio, comparte la música, abre el intercom, vuelve a llamar, qué hora es, batería del móvil o batería del casco."
     }
 }

@@ -73,7 +73,7 @@ class CascoListenerService : NotificationListenerService() {
             )
         } else {
             MessageStore.markRead(msg.id)
-            Announcer(this).say("Mensaje de ${msg.sender}: ${msg.text}")
+            Announcer(this).say(phrases().announceMessage(msg.sender, msg.text))
         }
     }
 
@@ -93,6 +93,9 @@ class CascoListenerService : NotificationListenerService() {
         return who.toString() to text.toString()
     }
 
+    /** Frases en el idioma de la conversación (puede cambiar en ajustes mientras el servicio vive). */
+    private fun phrases() = Phrases(VoicePrefs.load(this).lang)
+
     // --- Batería ---
 
     private fun onPhoneBattery(i: Intent) {
@@ -104,7 +107,7 @@ class CascoListenerService : NotificationListenerService() {
         val charging = i.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0
         val crossed = phoneBattery.update(percent, charging) ?: return
         if (Headset.isConnected(this) && !VoiceActivity.isActive) {
-            Announcer(this).say("Atención: al móvil le queda el $percent por ciento de batería.")
+            Announcer(this).say(phrases().phoneBatteryAlert(percent))
         }
         Log.i(TAG, "batería del móvil bajo el $crossed %")
     }
@@ -116,9 +119,7 @@ class CascoListenerService : NotificationListenerService() {
             main.post {
                 val crossed = headsetBattery.update(percent, charging = false) ?: return@post
                 Log.i(TAG, "batería del casco bajo el $crossed %")
-                val text = if (percent == 0) "Atención: al casco casi no le queda batería."
-                else "Atención: al casco le queda más o menos el $percent por ciento de batería."
-                if (!VoiceActivity.isActive) Announcer(this).say(text)
+                if (!VoiceActivity.isActive) Announcer(this).say(phrases().headsetBatteryAlert(percent))
             }
         }.start()
     }

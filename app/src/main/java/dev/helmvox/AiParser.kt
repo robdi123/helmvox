@@ -17,10 +17,10 @@ import org.json.JSONObject
 import java.time.Duration
 
 /** Modelos de Claude que el usuario puede elegir (con su propia clave de API). */
-enum class AiModel(val id: String, val label: String) {
-    OPUS("claude-opus-5-5", "Opus 5.5 · el más listo"),
-    SONNET("claude-sonnet-5-5", "Sonnet 5.5 · equilibrado"),
-    HAIKU("claude-haiku-5-5", "Haiku 5.5 · rápido y barato"),
+enum class AiModel(val id: String, val labelRes: Int) {
+    OPUS("claude-opus-5-5", R.string.ai_model_opus),
+    SONNET("claude-sonnet-5-5", R.string.ai_model_sonnet),
+    HAIKU("claude-haiku-5-5", R.string.ai_model_haiku),
 }
 
 /** Ajustes de la IA (opcional): activada, clave de API de Anthropic y modelo. Solo en este móvil. */
@@ -55,8 +55,10 @@ object AiParser {
     sealed interface Result {
         data class Understood(val command: Command) : Result
         data object NotACommand : Result
-        data class Failed(val reason: String) : Result
+        data class Failed(val kind: Failure, val status: Int = 0) : Result
     }
+
+    enum class Failure { NO_KEY, BAD_KEY, SERVICE, NETWORK }
 
     private var client: AnthropicClient? = null
     private var clientKey: String? = null
@@ -65,7 +67,7 @@ object AiParser {
 
     fun parse(ctx: Context, heard: String): Result {
         val key = AiPrefs.apiKey(ctx)
-        if (key.isBlank()) return Result.Failed("sin clave de API")
+        if (key.isBlank()) return Result.Failed(Failure.NO_KEY)
         val model = AiPrefs.model(ctx)
         return try {
             val params = MessageCreateParams.builder()
@@ -105,13 +107,13 @@ object AiParser {
             Log.i(TAG, "IA ($model): $json")
             AiIntent.toCommand(JSONObject(json))?.let { Result.Understood(it) } ?: Result.NotACommand
         } catch (e: UnauthorizedException) {
-            Result.Failed("la clave de API no es válida")
+            Result.Failed(Failure.BAD_KEY)
         } catch (e: AnthropicServiceException) {
             Log.w(TAG, "error de la API", e)
-            Result.Failed("error del servicio (${e.statusCode()})")
+            Result.Failed(Failure.SERVICE, e.statusCode())
         } catch (e: Exception) {
             Log.w(TAG, "fallo llamando a la IA", e)
-            Result.Failed("sin conexión con la IA")
+            Result.Failed(Failure.NETWORK)
         }
     }
 

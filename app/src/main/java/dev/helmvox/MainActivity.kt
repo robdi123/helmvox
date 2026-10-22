@@ -50,36 +50,36 @@ class MainActivity : Activity() {
             setPadding(0, ui.dp(14), 0, 0)
         }
         column.addView(chips)
-        column.addView(ui.primaryButton("Probar ahora", R.drawable.ic_mic) {
+        column.addView(ui.primaryButton(getString(R.string.try_now), R.drawable.ic_mic) {
             startActivity(Intent(this, VoiceActivity::class.java))
         })
-        column.addView(ui.text("…o di «Ok Google» al casco", 13f, R.color.text_muted).apply {
+        column.addView(ui.text(getString(R.string.or_say_ok_google), 13f, R.color.text_muted).apply {
             gravity = Gravity.CENTER
             setPadding(0, ui.dp(8), 0, 0)
         })
 
         column.addView(ui.card().apply {
-            addView(ui.cardTitle(R.drawable.ic_shield, "Permisos"))
+            addView(ui.cardTitle(R.drawable.ic_shield, getString(R.string.card_permissions)))
             permissionRows = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
             addView(permissionRows)
         })
 
         column.addView(ui.card().apply {
-            addView(ui.cardTitle(R.drawable.ic_bell, "Avisos en el casco"))
+            addView(ui.cardTitle(R.drawable.ic_bell, getString(R.string.card_alerts)))
             addView(ui.row(
-                R.drawable.ic_bell, "Mensajes", "Te lee WhatsApp, Telegram y SMS al llegar",
+                R.drawable.ic_bell, getString(R.string.alert_messages), getString(R.string.alert_messages_sub),
                 switch(AppPrefs.readMessages(context)) { AppPrefs.setReadMessages(context, it) },
             ))
             addView(ui.row(
-                R.drawable.ic_battery, "Batería baja", "Avisa al bajar del 20 % y del 10 %",
+                R.drawable.ic_battery, getString(R.string.alert_battery), getString(R.string.alert_battery_sub),
                 switch(AppPrefs.batteryAlerts(context)) { AppPrefs.setBatteryAlerts(context, it) },
             ))
         })
 
         column.addView(ui.card().apply {
-            addView(ui.cardTitle(R.drawable.ic_bluetooth, "Casco"))
+            addView(ui.cardTitle(R.drawable.ic_bluetooth, getString(R.string.card_helmet)))
             addView(ui.row(
-                R.drawable.ic_build, "Diagnóstico", "Modo, batería y comandos de voz. Cierra Cardo Connect antes.",
+                R.drawable.ic_build, getString(R.string.diagnosis), getString(R.string.diagnosis_sub),
                 ui.icon(R.drawable.ic_chevron_right, R.color.text_muted),
             ) { runDiagnosis() })
         })
@@ -136,7 +136,7 @@ class MainActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             setPadding(ui.dp(14), 0, 0, 0)
             addView(ui.text("HelmVox", 26f, bold = true))
-            addView(ui.text("Asistente de voz para tu Cardo", 14f, R.color.text_muted))
+            addView(ui.text(getString(R.string.tagline), 14f, R.color.text_muted))
         })
     }
 
@@ -148,22 +148,22 @@ class MainActivity : Activity() {
 
         chips.removeAllViews()
         val headset = Headset.isConnected(this)
-        chips.addView(ui.chip(if (headset) "Casco conectado" else "Casco no conectado", headset))
+        chips.addView(ui.chip(getString(if (headset) R.string.chip_headset_on else R.string.chip_headset_off), headset))
         val allOk = runtimeOk && notificationsOk && overlayOk && defaultOk
-        chips.addView(ui.chip(if (allOk) "Todo listo" else "Faltan permisos", allOk))
+        chips.addView(ui.chip(if (allOk) getString(R.string.chip_ready) else getString(R.string.chip_missing), allOk))
 
         permissionRows.removeAllViews()
         permissionRows.addView(permissionRow(
-            "Micrófono, contactos, llamadas, SMS y ubicación", "Lo básico para entenderte y actuar", runtimeOk,
+            getString(R.string.perm_basic), getString(R.string.perm_basic_sub), runtimeOk,
         ) { requestPermissions(runtimePermissions.toTypedArray(), 1) })
         permissionRows.addView(permissionRow(
-            "Leer notificaciones", "Para leerte los mensajes y vigilar la batería", notificationsOk,
+            getString(R.string.perm_notifications), getString(R.string.perm_notifications_sub), notificationsOk,
         ) { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) })
         permissionRows.addView(permissionRow(
-            "Mostrarse sobre otras apps", "Para poder responder mensajes con la voz", overlayOk,
+            getString(R.string.perm_overlay), getString(R.string.perm_overlay_sub), overlayOk,
         ) { startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))) })
         permissionRows.addView(permissionRow(
-            "App de voz del casco", "Que «Ok Google» y el botón del casco abran HelmVox", defaultOk,
+            getString(R.string.perm_voice_app), getString(R.string.perm_voice_app_sub), defaultOk,
         ) {
             // Abre el selector de Android: elige HelmVox → Siempre.
             startActivity(Intent(Intent.ACTION_VOICE_COMMAND).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -171,7 +171,7 @@ class MainActivity : Activity() {
     }
 
     private fun permissionRow(title: String, subtitle: String, ok: Boolean, fix: () -> Unit) =
-        ui.row(null, title, if (ok) subtitle else "$subtitle · toca para activarlo", ui.statusIcon(ok),
+        ui.row(null, title, if (ok) subtitle else getString(R.string.perm_tap_to_fix, subtitle), ui.statusIcon(ok),
             if (ok) null else fix)
 
     private fun notificationAccess(): Boolean =
@@ -195,13 +195,14 @@ class MainActivity : Activity() {
             visibility = View.GONE
         }
         val chevron = ui.icon(R.drawable.ic_chevron_down, R.color.text_muted)
-        addView(ui.row(R.drawable.ic_list, "Qué puedes decir", "Toca para ver todas las órdenes", chevron) {
+        addView(ui.row(R.drawable.ic_list, getString(R.string.commands_title), getString(R.string.commands_sub), chevron) {
             val open = body.visibility != View.VISIBLE
             body.visibility = if (open) View.VISIBLE else View.GONE
             chevron.rotation = if (open) 180f else 0f
         })
-        for ((group, items) in COMMANDS) {
-            body.addView(ui.text(group, 14f, R.color.primary, bold = true).apply {
+        for ((groupRes, itemsRes) in COMMANDS) {
+            val items = resources.getStringArray(itemsRes)
+            body.addView(ui.text(getString(groupRes), 14f, R.color.primary, bold = true).apply {
                 setPadding(0, ui.dp(14), 0, ui.dp(4))
             })
             for (item in items) body.addView(ui.text("•  $item", 14f, R.color.text_muted).apply {
@@ -215,8 +216,8 @@ class MainActivity : Activity() {
 
     private fun coffeeCard() = ui.card().apply {
         addView(ui.row(
-            R.drawable.ic_coffee, "Regálame un café",
-            "HelmVox es gratis y de código abierto. Si te sirve en la ruta, puedes invitarme un café ☕",
+            R.drawable.ic_coffee, getString(R.string.coffee),
+            getString(R.string.coffee_sub),
             ui.icon(R.drawable.ic_chevron_right, R.color.text_muted),
         ) { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(COFFEE_URL))) })
     }
@@ -225,9 +226,9 @@ class MainActivity : Activity() {
 
     private fun runDiagnosis() {
         val dialog = AlertDialog.Builder(this)
-            .setTitle("Diagnóstico del casco")
-            .setMessage("Leyendo el casco…")
-            .setPositiveButton("Cerrar", null)
+            .setTitle(R.string.diagnosis_title)
+            .setMessage(R.string.diagnosis_reading)
+            .setPositiveButton(R.string.close, null)
             .show()
         Thread {
             val (result, d) = CardoLink.diagnose(this)
@@ -236,40 +237,39 @@ class MainActivity : Activity() {
     }
 
     private fun describe(result: CardoLink.Result, d: CardoLink.Diagnosis?): String {
-        if (result == CardoLink.Result.NoHeadset) return "No encuentro el casco Cardo emparejado."
-        if (result is CardoLink.Result.Failed || d == null) {
-            return "No pude hablar con el casco. ¿Está encendido y Cardo Connect cerrada del todo?"
-        }
+        if (result == CardoLink.Result.NoHeadset) return getString(R.string.diag_no_headset)
+        if (result is CardoLink.Result.Failed || d == null) return getString(R.string.diag_failed)
+        val unknown = getString(R.string.unknown)
         fun yesNo(b: Boolean?) = when (b) {
-            true -> "sí"
-            false -> "no"
-            null -> "desconocido"
+            true -> getString(R.string.yes)
+            false -> getString(R.string.no)
+            null -> unknown
         }
         fun sensitivity(v: Int?) = when (v) {
-            null -> "desconocida"
-            50 -> "alta (50)"
-            100 -> "media-alta (100)"
-            150 -> "media (150)"
-            200, 210 -> "media-baja ($v)"
-            250 -> "baja (250)"
-            else -> "$v"
+            null -> unknown
+            50 -> getString(R.string.sens_high, v)
+            100 -> getString(R.string.sens_medium_high, v)
+            150 -> getString(R.string.sens_medium, v)
+            200, 210 -> getString(R.string.sens_medium_low, v)
+            250 -> getString(R.string.sens_low, v)
+            else -> v.toString()
         }
         return buildString {
-            appendLine("Modo intercom: ${d.dmcMode?.let { if (it) "DMC" else "Bluetooth" } ?: "desconocido"}")
-            appendLine("Batería: ${d.batteryPercent?.let { "~$it %" } ?: "desconocida"}")
+            appendLine(getString(R.string.diag_mode, d.dmcMode?.let { if (it) "DMC" else "Bluetooth" } ?: unknown))
+            appendLine(getString(R.string.diag_battery, d.batteryPercent?.let { "~$it %" } ?: unknown))
             appendLine()
-            appendLine("Comandos de voz avanzados («Ok Google»):")
-            appendLine("  • El casco los admite: ${yesNo(d.advancedVoiceSupported)}")
-            appendLine("  • Están activados: ${yesNo(d.advancedVoiceEnabled)}")
-            appendLine("  • Sensibilidad del control por voz: ${sensitivity(d.endDetectThreshold)}")
-            appendLine("  • Umbral de «Ok Google»: ${sensitivity(d.okGoogleThreshold)}")
-            appendLine("  • Código de idioma del casco: ${d.languageCode ?: "desconocido"}")
+            appendLine(getString(R.string.diag_voice_header))
+            appendLine(getString(R.string.diag_voice_supported, yesNo(d.advancedVoiceSupported)))
+            appendLine(getString(R.string.diag_voice_enabled, yesNo(d.advancedVoiceEnabled)))
+            appendLine(getString(R.string.diag_voice_sensitivity, sensitivity(d.endDetectThreshold)))
+            appendLine(getString(R.string.diag_voice_ok_google, sensitivity(d.okGoogleThreshold)))
+            appendLine(getString(R.string.diag_language, d.languageCode?.toString() ?: unknown))
             if (d.advancedVoiceEnabled == false) {
                 appendLine()
-                appendLine("→ Actívalos en Cardo Connect: Ajustes → Comandos de voz.")
+                appendLine(getString(R.string.diag_enable_hint))
             }
             appendLine()
-            append("Datos: ${d.raw}")
+            append(getString(R.string.diag_raw, d.raw))
         }
     }
 
@@ -277,23 +277,13 @@ class MainActivity : Activity() {
         /** Enlace de "Regálame un café" (Buy Me a Coffee, Ko-fi…). Vacío = no se muestra la tarjeta. */
         const val COFFEE_URL = "https://buymeacoffee.com/SpawnRipple"
 
+        /** Grupos de la lista "Qué puedes decir": título y órdenes (en res/values*). */
         val COMMANDS = listOf(
-            "Ruta" to listOf("Navega a… / Llévame a…", "A casa / Al trabajo", "Bencinera / Gasolinera"),
-            "Teléfono y mensajes" to listOf(
-                "Llama a… (contacto o número)", "Vuelve a llamar",
-                "Manda un mensaje a… diciendo…", "Lee mis mensajes / ¿Tengo mensajes?",
-                "Manda mi ubicación a…", "¿Dónde estoy?",
-            ),
-            "Música" to listOf(
-                "Pon la música / Pausa / Apaga la música", "Siguiente / Anterior",
-                "Pon música de… / Pon … en Spotify", "Sube / Baja el volumen",
-            ),
-            "Casco (con Cardo Connect cerrada)" to listOf(
-                "Cambia a modo DMC / Bluetooth", "Silencia el grupo", "Silencia mi micro / Activa el micro",
-                "Enciende / Apaga la radio", "Siguiente / Anterior emisora · Emisora 3",
-                "Comparte la música / la radio", "Abre el intercom (canal A, B o C) / Corta el intercom",
-            ),
-            "Información" to listOf("¿Qué hora es?", "Batería / del móvil / del casco", "Ayuda / Cancela"),
+            R.string.cmd_group_route to R.array.cmd_route,
+            R.string.cmd_group_phone to R.array.cmd_phone,
+            R.string.cmd_group_music to R.array.cmd_music,
+            R.string.cmd_group_helmet to R.array.cmd_helmet,
+            R.string.cmd_group_info to R.array.cmd_info,
         )
     }
 }

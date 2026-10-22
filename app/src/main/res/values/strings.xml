@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Textos de pantalla en inglés (idioma por defecto). Español en values-es/strings.xml. -->
+<resources>
+    <string name="app_name" translatable="false">HelmVox</string>
+    <string name="tagline">Voice assistant for your Cardo</string>
+
+    <!-- Estado -->
+    <string name="chip_headset_on">Helmet connected</string>
+    <string name="chip_headset_off">Helmet not connected</string>
+    <string name="chip_ready">All set</string>
+    <string name="chip_missing">Permissions missing</string>
+    <string name="try_now">Try it now</string>
+    <string name="or_say_ok_google">…or say «Ok Google» to your helmet</string>
+
+    <!-- Permisos -->
+    <string name="card_permissions">Permissions</string>
+    <string name="perm_basic">Microphone, contacts, calls, SMS and location</string>
+    <string name="perm_basic_sub">The basics to understand you and act</string>
+    <string name="perm_notifications">Read notifications</string>
+    <string name="perm_notifications_sub">To read you messages and watch the battery</string>
+    <string name="perm_overlay">Display over other apps</string>
+    <string name="perm_overlay_sub">To reply to messages by voice</string>
+    <string name="perm_voice_app">Helmet voice app</string>
+    <string name="perm_voice_app_sub">So «Ok Google» and the helmet button open HelmVox</string>
+    <string name="perm_tap_to_fix">%1$s · tap to turn on</string>
+
+    <!-- Avisos -->
+    <string name="card_alerts">Helmet alerts</string>
+    <string name="alert_messages">Messages</string>
+    <string name="alert_messages_sub">Reads WhatsApp, Telegram and SMS as they arrive</string>
+    <string name="alert_battery">Low battery</string>
+    <string name="alert_battery_sub">Warns when it drops below 20 % and 10 %</string>
+
+    <!-- Casco -->
+    <string name="card_helmet">Helmet</string>
+    <string name="diagnosis">Diagnostics</string>
+    <string name="diagnosis_sub">Mode, battery and voice commands. Close Cardo Connect first.</string>
+    <string name="diagnosis_title">Helmet diagnostics</string>
+    <string name="diagnosis_reading">Reading the helmet…</string>
+    <string name="close">Close</string>
+    <string name="diag_no_headset">I can\'t find a paired Cardo helmet.</string>
+    <string name="diag_failed">I couldn\'t talk to the helmet. Is it on, and is Cardo Connect fully closed?</string>
+    <string name="yes">yes</string>
+    <string name="no">no</string>
+    <string name="unknown">unknown</string>
+    <string name="sens_high">high (%1$d)</string>
+    <string name="sens_medium_high">medium-high (%1$d)</string>
+    <string name="sens_medium">medium (%1$d)</string>
+    <string name="sens_medium_low">medium-low (%1$d)</string>
+    <string name="sens_low">low (%1$d)</string>
+    <string name="diag_mode">Intercom mode: %1$s</string>
+    <string name="diag_battery">Battery: %1$s</string>
+    <string name="diag_voice_header">Advanced voice commands («Ok Google»):</string>
+    <string name="diag_voice_supported">  • Supported by the helmet: %1$s</string>
+    <string name="diag_voice_enabled">  • Turned on: %1$s</string>
+    <string name="diag_voice_sensitivity">  • Voice control sensitivity: %1$s</string>
+    <string name="diag_voice_ok_google">  • «Ok Google» threshold: %1$s</string>
+    <string name="diag_language">  • Helmet language code: %1$s</string>
+    <string name="diag_enable_hint">→ Turn them on in Cardo Connect: Settings → Voice commands.</string>
+    <string name="diag_raw">Data: %1$s</string>
+
+    <!-- Voz -->
+    <string name="card_voice">Voice and language</string>
+    <string name="accent_label">Accent it listens to</string>
+    <string name="accent_latam">Latin American Spanish (general)</string>
+    <string name="voice_label">Voice it answers with</string>
+    <string name="voice_default">Phone default</string>
+    <string name="voice_needs_internet">needs internet</string>
+    <string name="voice_spain">Spain (Castilian)</string>
+    <string name="voice_latam">Latin America (US)</string>
+    <string name="voices_none">No voices installed for this language on this phone.</string>
+    <string name="voices_count">%1$d voices: %2$s</string>
+    <string name="rate">Speed: %1$.2fx</string>
+    <string name="pitch">Pitch: %1$.2fx</string>
+    <string name="volume">Voice volume: %1$d %%</string>
+    <string name="try_voice">▶  Try voice</string>
+
+    <!-- IA -->
+    <string name="card_ai">Artificial intelligence</string>
+    <string name="ai_intro">Optional. If the app doesn\'t understand a phrase and there\'s internet, it asks Claude using your own API key. Without a key or signal, everything keeps working offline.</string>
+    <string name="ai_enable">Use AI when it doesn\'t understand</string>
+    <string name="ai_key_label">Anthropic API key</string>
+    <string name="ai_model_label">Model</string>
+    <string name="ai_model_opus">Opus 5.5 · the smartest</string>
+    <string name="ai_model_sonnet">Sonnet 5.5 · balanced</string>
+    <string name="ai_model_haiku">Haiku 5.5 · fast and cheap</string>
+    <string name="ai_test">Test with «put something on to listen to»</string>
+    <string name="ai_get_key">Get a key at console.anthropic.com</string>
+    <string name="ai_paste_key">Paste your API key first.</string>
+    <string name="ai_asking">Asking Claude…</string>
+    <string name="ai_ok">✔ Works (%1$d ms): understood %2$s.</string>
+    <string name="ai_not_command">It answered, but didn\'t recognize the command (%1$d ms).</string>
+    <string name="ai_failed">✖ Didn\'t work: %1$s.</string>
+    <string name="ai_err_no_key">no API key</string>
+    <string name="ai_err_bad_key">the API key isn\'t valid</string>
+    <string name="ai_err_service">service error (%1$d)</string>
+    <string name="ai_err_network">couldn\'t reach the AI</string>
+
+    <!-- Órdenes -->
+    <string name="commands_title">What you can say</string>
+    <string name="commands_sub">Tap to see every command</string>
+    <string name="cmd_group_route">Directions</string>
+    <string-array name="cmd_route">
+        <item>Navigate to… / Take me to…</item>
+        <item>Take me home</item>
+        <item>Find a gas station</item>
+    </string-array>
+    <string name="cmd_group_phone">Phone and messages</string>
+    <string-array name="cmd_phone">
+        <item>Call… (contact or number) / Redial</item>
+        <item>Text… saying…</item>
+        <item>Read my messages / Any new messages?</item>
+        <item>Send my location to…</item>
+        <item>Where am I?</item>
+    </string-array>
+    <string name="cmd_group_music">Music</string>
+    <string-array name="cmd_music">
+        <item>Play music / Pause / Stop the music</item>
+        <item>Next / Previous song</item>
+        <item>Play… / Play… on Spotify</item>
+        <item>Volume up / down · It\'s too loud</item>
+    </string-array>
+    <string name="cmd_group_helmet">Helmet (with Cardo Connect closed)</string>
+    <string-array name="cmd_helmet">
+        <item>Switch to DMC / Bluetooth</item>
+        <item>Mute the group</item>
+        <item>Mute my mic</item>
+        <item>Turn the radio on / off</item>
+        <item>Next / Previous station · Station 3</item>
+        <item>Share the music / the radio</item>
+        <item>Open the intercom (channel A, B or C) / Close the intercom</item>
+    </string-array>
+    <string name="cmd_group_info">Info</string>
+    <string-array name="cmd_info">
+        <item>What time is it?</item>
+        <item>Battery / phone battery / helmet battery</item>
+        <item>Help / Cancel</item>
+    </string-array>
+
+    <!-- Café -->
+    <string name="coffee">Buy me a coffee</string>
+    <string name="coffee_sub">HelmVox is free and open source. If it helps you on the road, you can buy me a coffee ☕</string>
+
+    <!-- Pantalla de voz -->
+    <string name="state_connecting">Connecting to the helmet</string>
+    <string name="state_listening">Listening</string>
+    <string name="state_thinking">One moment</string>
+    <string name="state_speaking">HelmVox</string>
+    <string name="state_headset">Talking to the helmet</string>
+    <string name="state_locating">Finding your location</string>
+</resources>

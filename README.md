@@ -5,8 +5,8 @@ casco sin soltar el manillar: mensajes, música, rutas, llamadas y ubicación, y
 intercom, la radio y la batería de tu Cardo.
 
 > 🇬🇧 *HelmVox is a free, open-source Android voice assistant for motorcyclists using a **Cardo**
-> helmet intercom (tested on Cardo PackTalk and PackTalk Bold). Spanish-first. Optional AI
-> understanding with your own Anthropic API key.*
+> helmet intercom (tested on Cardo PackTalk and PackTalk Bold). **Works in English and Spanish.**
+> Optional AI understanding with your own Anthropic API key. English quick guide below.*
 
 ---
 
@@ -22,6 +22,12 @@ intercom, la radio y la batería de tu Cardo.
 
 HelmVox está pensada **solo para Cardo**. Si la pruebas en otro modelo, cuéntanos cómo te fue
 abriendo un *issue*.
+
+## Idiomas
+
+**Español** (Chile, Argentina, México, Colombia, Perú, Latinoamérica general y España) e **inglés**
+(EE. UU., Reino Unido, Australia, India). Se elige en **Voz e idioma → Acento con que te escucha**;
+la app escucha, entiende y responde en ese idioma. La interfaz sigue el idioma del móvil.
 
 ## Qué hace
 
@@ -102,3 +108,27 @@ HelmVox es gratis y de código abierto. Si te sirve en la ruta, puedes
 ## Licencia
 
 [MIT](LICENSE) — úsala, modifícala y compártela libremente manteniendo el aviso de copyright.
+
+---
+
+## 🇬🇧 English quick guide
+
+**HelmVox** lets you control your phone and your **Cardo** intercom by voice, hands on the bars.
+
+- **Messages:** reads WhatsApp, Telegram and SMS aloud as they arrive and lets you reply by voice.
+- **Music, directions, calls, location:** «play some music», «skip this song», «it's too loud»,
+  «take me home», «find a gas station», «call Mom», «where am I?», «send my location to Laura».
+- **Cardo controls** (classic-protocol models): switch DMC / Bluetooth intercom, mute the group or
+  your mic, FM radio, share music, helmet battery and diagnostics.
+- **Natural phrasing:** no need to memorize commands. Optional AI (Claude, with your own API key)
+  understands almost anything when there's signal; everything else works offline.
+
+**Setup:** install the APK, grant the permissions (all green), pick **Voice and language → Accent it
+listens to → English**, then trigger your phone's voice assistant from the helmet (button or
+«Ok Google»). Close Cardo Connect to use the helmet controls.
+
+**Compatibility:** tested on Cardo PackTalk and PackTalk Bold. Newer Cardo models (PackTalk Edge,
+Neo, Outdoor) use a different protocol and the helmet controls won't work there.
+
+*Not affiliated with Cardo Systems. Ride safe.*
+

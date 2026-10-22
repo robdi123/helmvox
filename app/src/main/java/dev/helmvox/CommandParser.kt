@@ -157,7 +157,14 @@ object CommandParser {
     private val YES = Regex("^(si|vale|claro|envia|envialo|mandalo|correcto|dale|ok|venga|afirmativo)\\b")
     private val TRAILING_PLEASE = Regex("(?i)[\\s,]*por favor[.!]*$")
 
-    fun parse(spoken: String): Command? {
+    /** Orden para [spoken] en el idioma de la conversación (español por defecto). */
+    fun parse(spoken: String, lang: Lang = Lang.ES): Command? =
+        if (lang == Lang.EN) EnglishParser.parse(spoken) else parseSpanish(spoken)
+
+    fun isYes(spoken: String, lang: Lang = Lang.ES): Boolean =
+        if (lang == Lang.EN) EnglishParser.isYes(spoken) else YES.containsMatchIn(Normalized(spoken).text)
+
+    private fun parseSpanish(spoken: String): Command? {
         val full = Normalized(spoken)
         val start = WAKE.find(full.text)?.range?.last?.plus(1) ?: 0
         val withoutWake = full.drop(start)
@@ -236,12 +243,11 @@ object CommandParser {
         return FuzzyIntent.match(t)
     }
 
-    fun isYes(spoken: String): Boolean = YES.containsMatchIn(Normalized(spoken).text)
 
     private fun clean(s: String) = s.replace(TRAILING_PLEASE, "").trim().trimEnd('.', '!', '?')
 
     /** Texto normalizado que recuerda de qué posición del original salió cada carácter. */
-    private class Normalized private constructor(
+    internal class Normalized private constructor(
         private val orig: String,
         val text: String,
         private val map: IntArray,

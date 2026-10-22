@@ -42,10 +42,10 @@ class VoiceSettingsPanel(ctx: Context) : LinearLayout(ctx) {
         setPadding(ui.dp(16), ui.dp(16), ui.dp(16), ui.dp(16))
         layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply { topMargin = ui.dp(12) }
 
-        addView(ui.cardTitle(R.drawable.ic_volume, "Voz e idioma"))
-        addView(label("Acento con que te escucha"))
+        addView(ui.cardTitle(R.drawable.ic_volume, context.getString(R.string.card_voice)))
+        addView(label(context.getString(R.string.accent_label)))
         addView(field(listenSpinner))
-        addView(label("Voz con que te responde"))
+        addView(label(context.getString(R.string.voice_label)))
         addView(field(voiceSpinner))
         addView(voiceCount)
         addView(spacer())
@@ -58,15 +58,19 @@ class VoiceSettingsPanel(ctx: Context) : LinearLayout(ctx) {
             prefs = prefs.copy(volume = v)
             showLevels()
         })
-        addView(ui.secondaryButton("▶  Probar voz") { speakSample() })
+        addView(ui.secondaryButton(context.getString(R.string.try_voice)) { speakSample() })
         showLevels()
 
-        val accents = VoicePrefs.LISTEN_LOCALES.entries.toList()
-        listenSpinner.adapter = adapter(accents.map { it.key })
-        listenSpinner.setSelection(accents.indexOfFirst { it.value == prefs.listenLocale }.coerceAtLeast(0))
+        val accents = VoicePrefs.LISTEN_LOCALES
+        listenSpinner.adapter = adapter(accents.map(::accentName))
+        listenSpinner.setSelection(accents.indexOf(prefs.listenLocale).coerceAtLeast(0))
         listenSpinner.onItemSelectedListener = onSelect { pos ->
-            prefs = prefs.copy(listenLocale = accents[pos].value)
+            val before = prefs.lang
+            prefs = prefs.copy(listenLocale = accents[pos])
+            // Otro idioma: la voz elegida ya no sirve y la lista de voces cambia.
+            if (prefs.lang != before) prefs = prefs.copy(engine = null, voice = null)
             prefs.save(context)
+            if (prefs.lang != before) refreshList()
         }
         voiceSpinner.onItemSelectedListener = onSelect { pos ->
             val e = entries.getOrNull(pos) ?: return@onSelect
@@ -109,10 +113,10 @@ class VoiceSettingsPanel(ctx: Context) : LinearLayout(ctx) {
         val found = engines.flatMap { (name, tts) ->
             val label = tts.engines.firstOrNull { it.name == name }?.label ?: name
             runCatching { tts.voices }.getOrNull().orEmpty()
-                .filter { it.locale.language == "es" && !it.features.contains("notInstalled") }
+                .filter { it.locale.language == voiceLanguage() && !it.features.contains("notInstalled") }
                 .map { Entry(name, label, it) }
         }.sortedWith(compareBy({ countryRank(it.voice!!.locale.country) }, { it.engineLabel }, { it.voice!!.name }))
-        Log.i(TAG, "voces en español: " + found.joinToString { "${it.voice!!.locale.toLanguageTag()} ${it.voice.name}" })
+        Log.i(TAG, "voces (${voiceLanguage()}): " + found.joinToString { "${it.voice!!.locale.toLanguageTag()} ${it.voice.name}" })
 
         populating = true
         entries = listOf(Entry(null, "", null)) + found
@@ -122,39 +126,47 @@ class VoiceSettingsPanel(ctx: Context) : LinearLayout(ctx) {
                 .coerceAtLeast(0)
         )
         val countries = found.map { countryName(it.voice!!.locale) }.distinct()
-        voiceCount.text = if (found.isEmpty()) "No hay voces en español instaladas en este móvil."
-        else "${found.size} voces en español: ${countries.joinToString()}"
+        voiceCount.text = if (found.isEmpty()) context.getString(R.string.voices_none)
+        else context.getString(R.string.voices_count, found.size, countries.joinToString())
         post { populating = false }
     }
 
     private fun describe(e: Entry): String {
-        val v = e.voice ?: return "Por defecto del móvil"
-        val online = if (v.isNetworkConnectionRequired) " · necesita internet" else ""
+        val v = e.voice ?: return context.getString(R.string.voice_default)
+        val online = if (v.isNetworkConnectionRequired) " · " + context.getString(R.string.voice_needs_internet) else ""
         return "${countryName(v.locale)} · ${e.engineLabel} · ${v.name}$online"
     }
 
-    private fun countryName(locale: Locale): String = when (locale.country) {
-        "ES" -> "España (castellano)"
-        "US" -> "Latinoamérica (EE. UU.)"
-        "" -> "Español"
-        else -> locale.getDisplayCountry(Locale.forLanguageTag("es")).ifEmpty { locale.country }
+    private fun voiceLanguage() = if (prefs.lang == Lang.EN) "en" else "es"
+
+    private fun countryName(locale: Locale): String = when {
+        locale.language == "es" && locale.country == "ES" -> context.getString(R.string.voice_spain)
+        locale.language == "es" && locale.country == "US" -> context.getString(R.string.voice_latam)
+        locale.country.isEmpty() -> locale.getDisplayLanguage(Locale.getDefault())
+        else -> locale.getDisplayCountry(Locale.getDefault()).ifEmpty { locale.country }
     }
 
-    private fun countryRank(country: String) = listOf("CL", "AR", "MX", "CO", "PE", "US", "ES").indexOf(country)
-        .let { if (it < 0) 99 else it }
+    private fun countryRank(country: String) =
+        (if (prefs.lang == Lang.EN) listOf("US", "GB", "AU", "IN") else listOf("CL", "AR", "MX", "CO", "PE", "US", "ES"))
+            .indexOf(country).let { if (it < 0) 99 else it }
+
+    /** "English (United Kingdom)", "español (Chile)"… en el idioma del móvil; es-US es "Latinoamérica". */
+    private fun accentName(tag: String): String =
+        if (tag == "es-US") context.getString(R.string.accent_latam)
+        else Locale.forLanguageTag(tag).getDisplayName(Locale.getDefault()).replaceFirstChar { it.uppercase() }
 
     private fun speakSample() {
         prefs.save(context)
         val tts = prefs.engine?.let { engines[it] } ?: engines.values.firstOrNull() ?: return
         prefs.applyTo(tts)
         val params = android.os.Bundle().apply { putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, prefs.volume) }
-        tts.speak(SAMPLE, TextToSpeech.QUEUE_FLUSH, params, "muestra")
+        tts.speak(Phrases(prefs.lang).sample(), TextToSpeech.QUEUE_FLUSH, params, "muestra")
     }
 
     private fun showLevels() {
-        rateLabel.text = "Velocidad: %.2fx".format(prefs.rate)
-        pitchLabel.text = "Tono: %.2fx".format(prefs.pitch)
-        volumeLabel.text = "Volumen de la voz: %d %%".format((prefs.volume * 100).toInt())
+        rateLabel.text = context.getString(R.string.rate, prefs.rate)
+        pitchLabel.text = context.getString(R.string.pitch, prefs.pitch)
+        volumeLabel.text = context.getString(R.string.volume, (prefs.volume * 100).toInt())
     }
 
     /** Barra de [min] a min + steps·step (por defecto 0,5x a 2,0x en pasos de 0,05). */
@@ -217,6 +229,5 @@ class VoiceSettingsPanel(ctx: Context) : LinearLayout(ctx) {
 
     private companion object {
         const val TAG = "HelmVox"
-        const val SAMPLE = "Hola, soy HelmVox. Navegando a la bencinera más cercana."
     }
 }

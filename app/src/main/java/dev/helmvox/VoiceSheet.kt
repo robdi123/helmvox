@@ -17,13 +17,13 @@ import android.widget.LinearLayout
 /** Panel inferior de la sesión de voz: círculo animado según el estado y el texto en grande. */
 class VoiceSheet(ctx: Context) : FrameLayout(ctx) {
 
-    enum class State(val label: String, val icon: Int, val pulseMs: Long?) {
-        CONNECTING("Conectando con el casco", R.drawable.ic_bluetooth, null),
-        LISTENING("Te escucho", R.drawable.ic_mic, 900),
-        THINKING("Un momento", R.drawable.ic_mic, null),
-        SPEAKING("HelmVox", R.drawable.ic_volume, 1400),
-        HEADSET("Hablando con el casco", R.drawable.ic_bluetooth, 1400),
-        LOCATING("Buscando tu ubicación", R.drawable.ic_location, 1400),
+    enum class State(val label: Int, val icon: Int, val pulseMs: Long?) {
+        CONNECTING(R.string.state_connecting, R.drawable.ic_bluetooth, null),
+        LISTENING(R.string.state_listening, R.drawable.ic_mic, 900),
+        THINKING(R.string.state_thinking, R.drawable.ic_mic, null),
+        SPEAKING(R.string.state_speaking, R.drawable.ic_volume, 1400),
+        HEADSET(R.string.state_headset, R.drawable.ic_bluetooth, 1400),
+        LOCATING(R.string.state_locating, R.drawable.ic_location, 1400),
     }
 
     private val ui = Ui(ctx)
@@ -76,7 +76,7 @@ class VoiceSheet(ctx: Context) : FrameLayout(ctx) {
     }
 
     fun setState(state: State) {
-        stateLabel.text = state.label.uppercase()
+        stateLabel.text = context.getString(state.label).uppercase()
         glyph.setImageResource(state.icon)
         core.alpha = if (state == State.THINKING) 0.6f else 1f
         pulse?.cancel()

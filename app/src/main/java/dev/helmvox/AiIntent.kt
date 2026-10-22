@@ -19,9 +19,10 @@ object AiIntent {
     /** Instrucciones para la IA: qué significa cada intención y qué campos rellenar. */
     val SYSTEM_PROMPT = """
         Eres el intérprete de órdenes de HelmVox, un asistente de voz para motoristas que hablan en
-        español (de cualquier país) a través de un intercomunicador de casco. Recibes la transcripción
-        de lo que dijo el motorista (puede tener errores de reconocimiento de voz) y devuelves UNA
-        intención con sus datos. No converses: solo clasifica.
+        español (de cualquier país) o en inglés a través de un intercomunicador de casco. Recibes la
+        transcripción de lo que dijo el motorista (puede tener errores de reconocimiento de voz) y
+        devuelves UNA intención con sus datos. No converses: solo clasifica. Los datos (destino,
+        nombre, texto, búsqueda) se copian en el idioma en que se dijeron.
 
         Intenciones:
         - navigate: ir a un lugar. destination = el lugar tal como se dijo ("casa", "Valparaíso", "gasolinera").
