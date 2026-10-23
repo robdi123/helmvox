@@ -135,16 +135,21 @@ class VoiceActivity : Activity() {
             }
 
             private var beeped = false
+            private val started = System.currentTimeMillis()
+            private fun ms() = System.currentTimeMillis() - started
+
             override fun onReadyForSpeech(params: Bundle?) {
-                if (current() && !beeped) {
-                    beeped = true
-                    beep()
-                }
+                Log.i(TAG, "reconocedor listo (+${ms()} ms)")
+                if (!current() || beeped) return
+                beeped = true
+                // "Listo" no es "grabando": el audio del micrófono del casco tarda un poco más en
+                // llegar. Si el pitido sonara ya, lo primero que dices se perdería.
+                main.postDelayed({ if (current()) beep() }, BEEP_AFTER_READY_MS)
             }
-            override fun onBeginningOfSpeech() {}
+            override fun onBeginningOfSpeech() { Log.i(TAG, "empiezas a hablar (+${ms()} ms)") }
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() {}
+            override fun onEndOfSpeech() { Log.i(TAG, "fin de la frase (+${ms()} ms)") }
             override fun onPartialResults(partialResults: Bundle?) {}
             override fun onEvent(eventType: Int, params: Bundle?) {}
         })
@@ -657,6 +662,7 @@ class VoiceActivity : Activity() {
         // Cambio del canal de llamada al de música más el fundido de entrada del casco.
         const val A2DP_WARMUP_MS = 1300L
         const val REOPEN_SETTLE_MS = 900L
+        const val BEEP_AFTER_READY_MS = 700L
         const val MAX_RECOGNIZER_RESTARTS = 2
         const val STANDBY_WAIT_MS = 2500L
         const val HEADSET_WAIT_MS = 1500L
