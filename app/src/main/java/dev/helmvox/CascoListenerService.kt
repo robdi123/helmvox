@@ -89,7 +89,9 @@ class CascoListenerService : NotificationListenerService() {
         val n = sbn.notification
         if (n.flags and Notification.FLAG_GROUP_SUMMARY != 0) return emptyList()
         if (n.flags and Notification.FLAG_ONGOING_EVENT != 0) return emptyList()
-        return parse(n).mapNotNull { (sender, text) -> MessageStore.add(sbn.packageName, label, sender, text, n) }
+        return parse(n).mapNotNull { (sender, text) ->
+            MessageStore.add(sbn.packageName, label, MessageStore.speakableName(sender), text, n)
+        }
     }
 
     /**

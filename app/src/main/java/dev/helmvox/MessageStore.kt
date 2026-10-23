@@ -86,6 +86,17 @@ object MessageStore {
         }
     }
 
+    /**
+     * Nombre apto para leer en voz alta: sin emojis ni adornos, sin el "(4 mensajes)" que añade
+     * WhatsApp a los grupos ni la "~" de los contactos que no tienes guardados.
+     */
+    fun speakableName(raw: String): String = raw
+        .replace(Regex("\\s*\\(\\d+ (mensajes|mensaje|messages|message)\\)"), "")
+        .replace(Regex("[^\\p{L}\\p{N}\\s,.'&+-]"), " ")
+        .replace(Regex("\\s+,"), ",")
+        .replace(Regex("\\s{2,}"), " ")
+        .trim(' ', ',')
+
     private fun fold(s: String) = Normalizer.normalize(s, Normalizer.Form.NFD)
         .replace(Regex("\\p{Mn}+"), "").lowercase().trim()
 }
