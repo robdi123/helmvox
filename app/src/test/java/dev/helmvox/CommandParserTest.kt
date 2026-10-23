@@ -153,5 +153,13 @@ class CommandParserTest {
         assertTrue(CommandParser.isYes("Sí"))
         assertTrue(CommandParser.isYes("vale, envíalo"))
         assertFalse(CommandParser.isYes("no"))
+        assertTrue(CommandParser.isYes("ya po"))
+        assertTrue(CommandParser.isYes("de una"))
+        assertTrue(CommandParser.isYes("Mándalo"))
+        assertTrue(CommandParser.isYes("obvio"))
+        assertFalse(CommandParser.isYes("ya no"))
+        assertFalse(CommandParser.isYes("no lo mandes"))
+        assertFalse(CommandParser.isYes("espera"))
+        assertFalse(CommandParser.isYes("yes", Lang.ES) && CommandParser.isYes("no way", Lang.EN))
     }
 }

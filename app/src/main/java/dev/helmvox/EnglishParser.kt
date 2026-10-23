@@ -36,7 +36,9 @@ internal object EnglishParser {
     private val NUMBERS = mapOf("one" to 1, "two" to 2, "three" to 3, "four" to 4, "five" to 5, "six" to 6)
     private val ARTICLES = Regex("^((the|my|a|an) )+")
 
-    fun isYes(spoken: String) = YES.containsMatchIn(CommandParser.Normalized(spoken).text)
+    fun isYes(spoken: String) = CommandParser.Normalized(spoken).text.let {
+        YES.containsMatchIn(it) && !Regex("\\b(no|nope|don t|dont|cancel|wait)\\b").containsMatchIn(it)
+    }
 
     fun parse(spoken: String): Command? {
         val full = CommandParser.Normalized(spoken)

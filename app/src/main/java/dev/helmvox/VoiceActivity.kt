@@ -369,7 +369,7 @@ class VoiceActivity : Activity() {
         val contact = if (chat == null) Actions.findContact(this, who) else null
         val name = chat?.sender ?: contact?.name ?: return say(ph.contactNotFound(who)) { done() }
         fun confirm(body: String) {
-            retries = MAX_RETRIES // en la confirmación no reintentamos: si no se oye, no se envía
+            retries = 0 // un reintento si no se oye; sin un "sí" claro no se envía nada
             ask(ph.confirmMessage(name, body)) {
                 listen { answer ->
                     if (!answer.any { CommandParser.isYes(it, lang) }) return@listen say(ph.cancelled()) { done() }
@@ -393,7 +393,7 @@ class VoiceActivity : Activity() {
             ph.manyMessages(messages.map { it.sender to it.text })
         }
         if (!last.canReply) return say(intro) { done() }
-        retries = MAX_RETRIES // en preguntas de sí/no no se reintenta: si no se oye, no se hace nada
+        retries = 0 // un reintento si no se oye; sin un "sí" claro no se hace nada
         ask("$intro ${ph.replyTo(last.sender)}") {
             listen { answer ->
                 if (answer.any { CommandParser.isYes(it, lang) }) dictateReply(last) else say(ph.ok()) { done() }
@@ -406,7 +406,7 @@ class VoiceActivity : Activity() {
         ask(ph.sayYourReply()) {
             listen(dictating = true) { dictated ->
                 val text = dictated.first()
-                retries = MAX_RETRIES
+                retries = 0
                 ask(ph.confirmReply(text)) {
                     listen { confirm ->
                         if (!confirm.any { CommandParser.isYes(it, lang) }) return@listen say(ph.cancelled()) { done() }
@@ -435,7 +435,7 @@ class VoiceActivity : Activity() {
                 val name = chat?.sender ?: contact?.name
                     ?: return@post say(ph.contactNotFound(who)) { done() }
                 val via = chat?.appLabel ?: "SMS"
-                retries = MAX_RETRIES
+                retries = 0
                 ask(ph.confirmLocation(name, via)) {
                     listen { answer ->
                         if (!answer.any { CommandParser.isYes(it, lang) }) return@listen say(ph.cancelled()) { done() }

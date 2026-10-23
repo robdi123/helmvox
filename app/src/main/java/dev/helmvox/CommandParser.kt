@@ -168,7 +168,11 @@ object CommandParser {
     private val BATTERY = Regex("\\bbateria\\b")
     private val PHONE_WORD = Regex("\\b(telefono|movil|celular|smartphone)\\b")
     private val HEADSET_WORD = Regex("\\b(casco|intercom|intercomunicador|cardo|packtalk|pack talk|auricular|auriculares)\\b")
-    private val YES = Regex("^(si|vale|claro|envia|envialo|mandalo|correcto|dale|ok|venga|afirmativo)\\b")
+    private val YES = Regex(
+        "^(si|sip|sii|ya|vale|claro|envia|envialo|enviala|manda|mandalo|mandala|correcto|dale|ok|okay|venga|" +
+            "afirmativo|obvio|bueno|listo|hazlo|de una|por supuesto|perfecto|exacto|eso)\\b"
+    )
+    private val NO_WORD = Regex("\\b(no|nada|cancela|cancelar|espera)\\b")
     private val TRAILING_PLEASE = Regex("(?i)[\\s,]*por favor[.!]*$")
 
     /** Orden para [spoken] en el idioma de la conversación (español por defecto). */
@@ -176,7 +180,8 @@ object CommandParser {
         if (lang == Lang.EN) EnglishParser.parse(spoken) else parseSpanish(spoken)
 
     fun isYes(spoken: String, lang: Lang = Lang.ES): Boolean =
-        if (lang == Lang.EN) EnglishParser.isYes(spoken) else YES.containsMatchIn(Normalized(spoken).text)
+        if (lang == Lang.EN) EnglishParser.isYes(spoken)
+        else Normalized(spoken).text.let { YES.containsMatchIn(it) && !NO_WORD.containsMatchIn(it) }
 
     private fun parseSpanish(spoken: String): Command? {
         val full = Normalized(spoken)
