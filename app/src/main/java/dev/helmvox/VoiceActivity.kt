@@ -8,7 +8,6 @@ import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
-import android.media.ToneGenerator
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -108,8 +107,8 @@ class VoiceActivity : Activity() {
     private fun listen(dictating: Boolean, onText: (List<String>) -> Unit) {
         dictation = dictating
         sheet.setState(VoiceSheet.State.LISTENING)
-        // El pitido suena cuando el reconocedor ya escucha (onReadyForSpeech): si sonara antes,
-        // lo primero que dices después del pitido se perdería.
+        // Sin pitido propio: el reconocedor de Google ya pita al empezar a escuchar, y un segundo
+        // pitido por el casco hacía que su cancelación de eco borrara lo primero que decías.
         startRecognizer(onText)
     }
 
@@ -134,17 +133,11 @@ class VoiceActivity : Activity() {
                 onRecognitionError(error, onText)
             }
 
-            private var beeped = false
             private val started = System.currentTimeMillis()
             private fun ms() = System.currentTimeMillis() - started
 
             override fun onReadyForSpeech(params: Bundle?) {
                 Log.i(TAG, "reconocedor listo (+${ms()} ms)")
-                if (!current() || beeped) return
-                beeped = true
-                // "Listo" no es "grabando": el audio del micrófono del casco tarda un poco más en
-                // llegar. Si el pitido sonara ya, lo primero que dices se perdería.
-                main.postDelayed({ if (current()) beep() }, BEEP_AFTER_READY_MS)
             }
             override fun onBeginningOfSpeech() { Log.i(TAG, "empiezas a hablar (+${ms()} ms)") }
             override fun onRmsChanged(rmsdB: Float) {}
@@ -606,15 +599,6 @@ class VoiceActivity : Activity() {
         speaker.say(text, then)
     }
 
-    private fun beep() {
-        val tone = ToneGenerator(
-            if (onCallChannel) AudioManager.STREAM_VOICE_CALL else AudioManager.STREAM_MUSIC,
-            (VoicePrefs.load(this).volume * 70).toInt().coerceIn(10, 100),
-        )
-        tone.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
-        main.postDelayed({ tone.release() }, 400)
-    }
-
     private fun requestFocus() {
         val req = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
             .setAudioAttributes(
@@ -662,7 +646,6 @@ class VoiceActivity : Activity() {
         // Cambio del canal de llamada al de música más el fundido de entrada del casco.
         const val A2DP_WARMUP_MS = 1300L
         const val REOPEN_SETTLE_MS = 900L
-        const val BEEP_AFTER_READY_MS = 700L
         const val MAX_RECOGNIZER_RESTARTS = 2
         const val STANDBY_WAIT_MS = 2500L
         const val HEADSET_WAIT_MS = 1500L
