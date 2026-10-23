@@ -22,6 +22,7 @@ class NaturalPhrasesTest {
         assertEquals(Command.Message("Nano"), p("un mensaje de WhatsApp a Nano"))
         assertEquals(Command.Message("Nano"), p("Enviar WhatsApp a Nano"))
         assertEquals(Command.Message("Nano"), p("Mensaje a Nano"))
+        assertEquals(Command.Message("Nano"), p("envía un mensaje por WhatsApp a Nano"))
         assertEquals(Command.Message("Laura"), p("escríbele a la Laura"))
         assertEquals(Command.ReadMessages, p("tengo mensajes de WhatsApp"))
     }

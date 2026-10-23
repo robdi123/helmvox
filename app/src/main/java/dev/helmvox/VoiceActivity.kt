@@ -100,7 +100,13 @@ class VoiceActivity : Activity() {
 
     // --- Escuchar ---
 
-    private fun listen(onText: (List<String>) -> Unit) {
+    /** true mientras se dicta un mensaje: el reconocedor espera más antes de dar por terminada la frase. */
+    private var dictation = false
+
+    private fun listen(onText: (List<String>) -> Unit) = listen(dictating = false, onText)
+
+    private fun listen(dictating: Boolean, onText: (List<String>) -> Unit) {
+        dictation = dictating
         sheet.setState(VoiceSheet.State.LISTENING)
         // El pitido suena cuando el reconocedor ya escucha (onReadyForSpeech): si sonara antes,
         // lo primero que dices después del pitido se perdería.
@@ -148,6 +154,14 @@ class VoiceActivity : Activity() {
                 .putExtra(RecognizerIntent.EXTRA_LANGUAGE, localeOverride ?: listenLocale)
                 .putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 5)
                 .putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
+                .apply {
+                    // Al dictar uno se para a pensar: no cortar en la primera pausa.
+                    if (dictation) {
+                        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
+                        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
+                        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 3000L)
+                    }
+                }
         )
     }
 
@@ -368,7 +382,7 @@ class VoiceActivity : Activity() {
         }
         if (text != null) return confirm(text)
         retries = 0
-        ask(ph.whatToSay(name)) { listen { dictated -> confirm(dictated.first()) } }
+        ask(ph.whatToSay(name)) { listen(dictating = true) { dictated -> confirm(dictated.first()) } }
     }
 
     /** Lee los mensajes y ofrece responder al último (si su app lo permite). */
@@ -392,7 +406,7 @@ class VoiceActivity : Activity() {
     private fun dictateReply(msg: IncomingMessage) {
         retries = 0
         ask(ph.sayYourReply()) {
-            listen { dictated ->
+            listen(dictating = true) { dictated ->
                 val text = dictated.first()
                 retries = MAX_RETRIES
                 ask(ph.confirmReply(text)) {
@@ -576,7 +590,8 @@ class VoiceActivity : Activity() {
         route.start(VoicePrefs.load(this).volume) { sco ->
             onCallChannel = sco
             speaker.useCallChannel = sco
-            then()
+            // Recién reabierto, el audio del micrófono del casco tarda un poco en llegar de verdad.
+            main.postDelayed({ if (!isFinishing) then() }, REOPEN_SETTLE_MS)
         }
     }
 
@@ -641,6 +656,7 @@ class VoiceActivity : Activity() {
         const val MAX_RETRIES = 1
         // Cambio del canal de llamada al de música más el fundido de entrada del casco.
         const val A2DP_WARMUP_MS = 1300L
+        const val REOPEN_SETTLE_MS = 900L
         const val MAX_RECOGNIZER_RESTARTS = 2
         const val STANDBY_WAIT_MS = 2500L
         const val HEADSET_WAIT_MS = 1500L

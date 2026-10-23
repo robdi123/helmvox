@@ -69,7 +69,7 @@ object CommandParser {
     /** "Manda un mensaje / WhatsApp a Nano" sin texto (a veces el reconocedor se come el verbo). */
     private val MESSAGE_TO = Regex(
         "^((manda|mandale|mandar|envia|enviale|enviar|escribe|escribele|escribir|escribirle) )?((un|el|otro) )?" +
-            "(mensaje|mensajito|sms|whatsapp|wasap)( de whatsapp)? (a|al|para)( (la|el))? (?<who>.+)$"
+            "(mensaje|mensajito|sms|whatsapp|wasap)( (de|por) (whatsapp|wasap|sms|telegram))? (a|al|para)( (la|el))? (?<who>.+)$"
     )
     private val WRITE_TO = Regex("^(escribele|escribirle|escribe|mandale|enviale) (a|al)( (la|el))? (?<who>.+)$")
     private val INTERCOM_MODE = Regex(
