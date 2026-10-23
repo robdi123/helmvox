@@ -229,7 +229,11 @@ class VoiceActivity : Activity() {
                 val result = AiParser.parse(this, heard.first())
                 Log.i(TAG, "IA: $result")
                 main.post {
-                    if (result is AiParser.Result.Understood) execute(result.command) else notUnderstood()
+                    if (result is AiParser.Result.Understood) {
+                        execute(CommandParser.withChannel(result.command, heard.first()) ?: result.command)
+                    } else {
+                        notUnderstood()
+                    }
                 }
             }.start()
             else -> notUnderstood()
@@ -265,7 +269,7 @@ class VoiceActivity : Activity() {
                 }
             }
 
-            is Command.Message -> sendMessage(cmd.who, cmd.text)
+            is Command.Message -> sendMessage(cmd.who, cmd.text, cmd.via)
 
             Command.ReadMessages -> {
                 CascoListenerService.instance?.ingestActive() // por si hay mensajes de antes de arrancar
@@ -364,11 +368,19 @@ class VoiceActivity : Activity() {
      * Envía [text] a [who]: si le escribió hace poco por WhatsApp (u otra app que deje responder),
      * en esa conversación; si no, por SMS. Sin texto, primero pregunta qué decir.
      */
-    private fun sendMessage(who: String, text: String?) {
-        val chat = MessageStore.latestReplyableFrom(who)
+    private fun sendMessage(who: String, text: String?, via: Channel?) {
+        // Pedido por WhatsApp: solo vale una conversación de WhatsApp (nunca SMS).
+        val chat = MessageStore.latestReplyableFrom(who, if (via == Channel.WHATSAPP) Actions.WHATSAPP_APPS else null)
+            ?.takeIf { via != Channel.SMS }
         val contact = if (chat == null) Actions.findContact(this, who) else null
         val name = chat?.sender ?: contact?.name ?: return say(ph.contactNotFound(who)) { done() }
         fun confirm(body: String) {
+            if (chat == null && via == Channel.WHATSAPP) {
+                // WhatsApp no deja enviar desde otra app: se deja escrito en su chat.
+                releaseAudio()
+                val ok = Actions.whatsappDraft(this, contact!!.number, body)
+                return say(if (ok) ph.whatsappReady(name) else ph.noWhatsapp()) { done() }
+            }
             retries = 0 // un reintento si no se oye; sin un "sí" claro no se envía nada
             ask(ph.confirmMessage(name, body)) {
                 listen { answer ->

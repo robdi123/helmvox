@@ -8,11 +8,31 @@ enum class RadioAction { ON, OFF, NEXT, PREVIOUS, STATION }
 
 enum class BatteryOf { PHONE, HEADSET, BOTH }
 
+/** Canal pedido para un mensaje ("por WhatsApp", "por SMS"); null = el que corresponda. */
+enum class Channel {
+    WHATSAPP, SMS;
+
+    companion object {
+        private val WA = Regex("\\b(whatsapp|whatsap|wasap|guasap|wsp|whats app)\\b")
+        private val SMS_WORDS = Regex("\\b(sms|mensaje de texto|text message)\\b")
+
+        /** Detecta el canal en una frase ya normalizada o tal cual se dijo. */
+        fun detect(spoken: String): Channel? {
+            val t = CommandParser.Normalized(spoken).text
+            return when {
+                WA.containsMatchIn(t) -> WHATSAPP
+                SMS_WORDS.containsMatchIn(t) -> SMS
+                else -> null
+            }
+        }
+    }
+}
+
 sealed interface Command {
     data class Navigate(val destination: String) : Command
     data class Call(val who: String) : Command
     /** Mensaje a [who]; sin [text], la app pregunta qué decir. */
-    data class Message(val who: String, val text: String? = null) : Command
+    data class Message(val who: String, val text: String? = null, val via: Channel? = null) : Command
     data class Media(val action: MediaAction) : Command
     /** "Pon música de Queen": busca y reproduce en la app de música. */
     data class PlaySearch(val query: String) : Command
@@ -177,7 +197,11 @@ object CommandParser {
 
     /** Orden para [spoken] en el idioma de la conversación (español por defecto). */
     fun parse(spoken: String, lang: Lang = Lang.ES): Command? =
-        if (lang == Lang.EN) EnglishParser.parse(spoken) else parseSpanish(spoken)
+        withChannel(if (lang == Lang.EN) EnglishParser.parse(spoken) else parseSpanish(spoken), spoken)
+
+    /** Si es un mensaje y la frase dice "por WhatsApp" / "por SMS", lo anota. */
+    fun withChannel(cmd: Command?, spoken: String): Command? =
+        if (cmd is Command.Message && cmd.via == null) cmd.copy(via = Channel.detect(spoken)) else cmd
 
     fun isYes(spoken: String, lang: Lang = Lang.ES): Boolean =
         if (lang == Lang.EN) EnglishParser.isYes(spoken)

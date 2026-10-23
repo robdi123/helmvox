@@ -65,10 +65,14 @@ object MessageStore {
 
     /** La conversación más reciente con [name] que se pueda responder (para enviarle cosas por WhatsApp). */
     @Synchronized
-    fun latestReplyableFrom(name: String): IncomingMessage? {
+    fun latestReplyableFrom(name: String, onlyApps: Set<String>? = null): IncomingMessage? {
         val wanted = fold(name)
         if (wanted.isEmpty()) return null
-        return messages.lastOrNull { it.canReply && fold(it.sender).let { s -> s == wanted || s.startsWith(wanted) } }
+        // Solo chats directos con esa persona: en un grupo ("Grupo, Nano") se respondería a todos.
+        return messages.lastOrNull {
+            it.canReply && (onlyApps == null || it.app in onlyApps) &&
+                fold(it.sender).let { s -> s == wanted || s.startsWith(wanted) }
+        }
     }
 
     /** Responde con [text] usando la acción "Responder" de la notificación original. */

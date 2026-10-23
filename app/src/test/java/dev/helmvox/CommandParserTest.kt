@@ -33,7 +33,7 @@ class CommandParserTest {
             p("Manda un mensaje a Laura diciendo llego en 10 minutos"),
         )
         assertEquals(
-            Command.Message("Pedro", "voy de camino"),
+            Command.Message("Pedro", "voy de camino", Channel.WHATSAPP),
             p("envíale un whatsapp a Pedro que voy de camino"),
         )
     }

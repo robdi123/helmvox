@@ -189,6 +189,29 @@ object Actions {
         runCatching { ctx.packageManager.getPackageInfo(pkg, 0) }.isSuccess
     }
 
+    val WHATSAPP_APPS = setOf("com.whatsapp", "com.whatsapp.w4b")
+
+    /**
+     * Abre el chat de WhatsApp de [number] con [text] escrito. WhatsApp no deja a otras apps
+     * enviar solas: hay que tocar "enviar". El número se pasa a formato internacional (+56…).
+     */
+    fun whatsappDraft(ctx: Context, number: String, text: String): Boolean {
+        val country = ctx.getSystemService(android.telephony.TelephonyManager::class.java)
+            ?.let { it.simCountryIso.ifBlank { it.networkCountryIso } }.orEmpty().uppercase()
+        val e164 = android.telephony.PhoneNumberUtils.formatNumberToE164(number, country) ?: number
+        val digits = e164.filter { it.isDigit() }
+        if (digits.length < 6) return false
+        val uri = Uri.parse("https://wa.me/$digits?text=" + Uri.encode(text))
+        for (pkg in WHATSAPP_APPS) {
+            try {
+                ctx.startActivity(Intent(Intent.ACTION_VIEW, uri).setPackage(pkg).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                return true
+            } catch (_: ActivityNotFoundException) {
+            }
+        }
+        return false
+    }
+
     fun volume(ctx: Context, up: Boolean) {
         val am = ctx.getSystemService(AudioManager::class.java)
         repeat(2) {
