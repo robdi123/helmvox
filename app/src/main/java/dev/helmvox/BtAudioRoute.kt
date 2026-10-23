@@ -24,13 +24,24 @@ class BtAudioRoute(private val ctx: Context) {
     private var deviceListener: Any? = null
     private var scoReceiver: BroadcastReceiver? = null
     private var active = false
+    private var savedCallVolume: Int? = null
 
     private val timeout = Runnable { deliver(false) }
 
-    fun start(onReady: (Boolean) -> Unit) {
+    /**
+     * [level] (0–1): volumen del canal de llamada mientras está abierto. El de llamadas suele estar
+     * al máximo y el pitido sonaría fortísimo; se restaura al cerrar.
+     */
+    fun start(level: Float, onReady: (Boolean) -> Unit) {
         this.onReady = onReady
         active = true
         am.mode = AudioManager.MODE_IN_COMMUNICATION
+        runCatching {
+            val stream = AudioManager.STREAM_VOICE_CALL
+            if (savedCallVolume == null) savedCallVolume = am.getStreamVolume(stream)
+            val max = am.getStreamMaxVolume(stream)
+            am.setStreamVolume(stream, Math.round(max * level).coerceIn(1, max), 0)
+        }
         main.postDelayed(timeout, TIMEOUT_MS)
         if (Build.VERSION.SDK_INT >= 31) startModern() else startLegacy()
     }
@@ -42,6 +53,8 @@ class BtAudioRoute(private val ctx: Context) {
         main.removeCallbacks(timeout)
         if (Build.VERSION.SDK_INT >= 31) stopModern() else stopLegacy()
         am.mode = AudioManager.MODE_NORMAL
+        savedCallVolume?.let { v -> runCatching { am.setStreamVolume(AudioManager.STREAM_VOICE_CALL, v, 0) } }
+        savedCallVolume = null
     }
 
     private fun deliver(sco: Boolean) {

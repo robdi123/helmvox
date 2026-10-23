@@ -73,7 +73,7 @@ class VoiceActivity : Activity() {
         speaker = Speaker(this)
         route = BtAudioRoute(this)
         requestFocus()
-        route.start { sco ->
+        route.start(VoicePrefs.load(this).volume) { sco ->
             onCallChannel = sco
             speaker.useCallChannel = sco
             val announce = intent?.action == ACTION_ANNOUNCE_MESSAGE
@@ -550,8 +550,19 @@ class VoiceActivity : Activity() {
         }, A2DP_WARMUP_MS)
     }
 
-    /** Pregunta que espera respuesta: se queda en el canal de llamada para volver a escuchar. */
-    private fun ask(text: String, then: () -> Unit) = speak(text, then)
+    /**
+     * Pregunta que espera respuesta: se dice por el canal de música (misma voz y volumen que las
+     * respuestas) y después se reabre el de llamada para escuchar.
+     */
+    private fun ask(text: String, then: () -> Unit) = say(text) {
+        if (isFinishing) return@say
+        sheet.setState(VoiceSheet.State.CONNECTING)
+        route.start(VoicePrefs.load(this).volume) { sco ->
+            onCallChannel = sco
+            speaker.useCallChannel = sco
+            then()
+        }
+    }
 
     private fun speak(text: String, then: () -> Unit) {
         show(text)
