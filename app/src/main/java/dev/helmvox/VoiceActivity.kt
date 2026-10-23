@@ -579,17 +579,19 @@ class VoiceActivity : Activity() {
     }
 
     /**
-     * Pregunta que espera respuesta: se dice por el canal de música (misma voz y volumen que las
-     * respuestas) y después se reabre el de llamada para escuchar.
+     * Pregunta que espera respuesta: se dice por el canal de llamada, que así sigue abierto entre la
+     * pregunta y tu respuesta. Cerrarlo y reabrirlo hacía que el micrófono del casco tardara en
+     * volver a transmitir y se perdía el principio de lo que dices. El volumen de ese canal se baja
+     * al "Volumen de la voz" mientras está abierto (ver BtAudioRoute).
      */
-    private fun ask(text: String, then: () -> Unit) = say(text) {
-        if (isFinishing) return@say
+    private fun ask(text: String, then: () -> Unit) {
+        if (onCallChannel) return speak(text, then)
+        // Si ya se había pasado al canal de música, se reabre el de llamada antes de preguntar.
         sheet.setState(VoiceSheet.State.CONNECTING)
         route.start(VoicePrefs.load(this).volume) { sco ->
             onCallChannel = sco
             speaker.useCallChannel = sco
-            // Recién reabierto, el audio del micrófono del casco tarda un poco en llegar de verdad.
-            main.postDelayed({ if (!isFinishing) then() }, REOPEN_SETTLE_MS)
+            main.postDelayed({ if (!isFinishing) speak(text, then) }, REOPEN_SETTLE_MS)
         }
     }
 

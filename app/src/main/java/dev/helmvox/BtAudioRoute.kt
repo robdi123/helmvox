@@ -111,6 +111,7 @@ class BtAudioRoute(private val ctx: Context) {
 
     private companion object {
         const val TIMEOUT_MS = 4000L
-        const val SETTLE_MS = 400L
+        // El micrófono del casco tarda en transmitir de verdad tras abrir el enlace: esperar algo más.
+        const val SETTLE_MS = 1000L
     }
 }
