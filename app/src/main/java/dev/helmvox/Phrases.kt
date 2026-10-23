@@ -61,6 +61,20 @@ class Phrases(val lang: Lang) {
     fun noAddress() = t("Tengo tu posición, pero sin internet no puedo decirte la dirección.", "I have your position, but without internet I can't tell you the address.")
     fun youAreIn(place: String) = t("Estás en $place.", "You're at $place.")
 
+    // --- Tiempo ---
+    fun weather(w: WeatherNow): String {
+        val sky = Weather.describe(w.code, lang)
+        val rain = w.rainChance?.let {
+            t(" Probabilidad de lluvia en las próximas ${Weather.HOURS} horas: $it por ciento.",
+                " Chance of rain in the next ${Weather.HOURS} hours: $it percent.")
+        } ?: ""
+        return t(
+            "Ahora hay ${w.temperature} grados y está $sky. Viento de ${w.windKmh} kilómetros por hora.$rain",
+            "It's ${w.temperature} degrees and $sky. Wind at ${w.windKmh} kilometers per hour.$rain",
+        )
+    }
+    fun noWeather() = t("No pude consultar el tiempo; puede que no haya internet.", "I couldn't get the weather; there may be no internet.")
+
     // --- Música ---
     fun playing(query: String) = t("Poniendo $query.", "Playing $query.")
     fun noMusicApp() = t("No encuentro ninguna app de música.", "I can't find a music app.")
@@ -82,10 +96,10 @@ class Phrases(val lang: Lang) {
         t("Atención: al casco le queda más o menos el $percent por ciento de batería.", "Heads up: the helmet is down to about $percent percent.")
     }
     fun help() = t(
-        "Puedes decir: navega a, llama a, manda un mensaje a, lee mis mensajes, manda mi ubicación a, dónde estoy, " +
+        "Puedes decir: navega a, llama a, manda un mensaje a, lee mis mensajes, manda mi ubicación a, dónde estoy, cómo está el tiempo, " +
             "pon la música, pon música de, siguiente, sube el volumen, cambia a modo DMC o Bluetooth, silencia el grupo, " +
             "enciende la radio, comparte la música, abre el intercom, vuelve a llamar, qué hora es, batería del móvil o batería del casco.",
-        "You can say: navigate to, call, text someone, read my messages, send my location to, where am I, " +
+        "You can say: navigate to, call, text someone, read my messages, send my location to, where am I, what's the weather, " +
             "play music, play something by, next song, volume up, switch to DMC or Bluetooth, mute the group, " +
             "turn on the radio, share music, open the intercom, redial, what time is it, phone battery or helmet battery.",
     )

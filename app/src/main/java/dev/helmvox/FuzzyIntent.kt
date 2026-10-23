@@ -47,6 +47,10 @@ internal object FuzzyIntent {
                 }
             )
         }
+        if (w.has("clima", "lluv", "llov", "pronostic", "temperatura", "llovizna") ||
+            (w.hasWord("tiempo") && !w.has("cuanto tiempo", "a tiempo", "tiempo falta", "tiempo queda")) ||
+            (w.hasWord("frio", "calor") && w.has("hace", "esta", "va a"))
+        ) return Command.Weather
         if (w.hasWord("hora", "horas")) return Command.Time
 
         // --- Llamadas ---
@@ -98,13 +102,15 @@ internal object FuzzyIntent {
         if (w.has("no escucho", "no se escucha", "no oigo", "no se oye")) return Command.Volume(up = true)
 
         // --- Música ---
-        val musicWord = w.has("music", "cancion", "tema", "spotify", "playlist", "disco", "lista")
+        val musicWord = w.has("music", "cancion", "tema", "spotify", "playlist", "disco", "lista") ||
+            (w.has("escuch") && w.has("algo", "pon", "quiero"))
         when {
             w.has("siguient", "proxim", "salta", "saltal", "salt") -> return Command.Media(MediaAction.NEXT)
             w.has("anterior") || (musicWord && w.has("atras", "vuelve")) -> return Command.Media(MediaAction.PREVIOUS)
             musicWord && w.has("otra", "cambi", "pasa") -> return Command.Media(MediaAction.NEXT)
+            // "para" solo cuenta como "parar" si no es "algo para escuchar".
             musicWord && (w.has("pausa", "apag", "deten", "quit", "stop", "silenc", "cort", "calla") ||
-                w.hasWord("para")) -> return Command.Media(MediaAction.PAUSE)
+                (w.hasWord("para") && !w.has("escuch"))) -> return Command.Media(MediaAction.PAUSE)
             musicWord -> return Command.Media(MediaAction.PLAY)
         }
 

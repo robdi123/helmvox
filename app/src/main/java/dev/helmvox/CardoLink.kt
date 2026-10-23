@@ -206,7 +206,7 @@ object CardoLink {
         /** GetSettings con varios tipos: los datos son pares [tipo][0]. */
         fun readSettings(types: List<Int>): ByteArray? {
             write(OP_GET_SETTINGS, ByteArray(types.size * 2) { if (it % 2 == 0) types[it / 2].toByte() else 0 })
-            val frame = awaitFrame(2500) { (it[2].toInt() and 0xFF) == OP_SETTINGS_RESPONSE } ?: return null
+            val frame = awaitFrame(2500) { isSettingsFrame(it) } ?: return null
             Log.i(TAG, "ajustes: ${frame.hex()}")
             return frame
         }
@@ -253,6 +253,13 @@ object CardoLink {
             return bytes.copyOf(size)
         }
     }
+
+    /**
+     * Respuesta de ajustes: el casco contesta a una petición con el mismo código (0x01) y, cuando
+     * los manda por su cuenta (p. ej. tras cambiar de modo), con 0x81.
+     */
+    internal fun isSettingsFrame(frame: ByteArray) =
+        frame.size > 3 && (frame[2].toInt() and 0xFF).let { it == OP_SETTINGS_RESPONSE || it == OP_GET_SETTINGS.toInt() }
 
     internal fun isBatteryUpdate(frame: ByteArray) =
         frame.size >= 6 && (frame[2].toInt() and 0xFF) == OP_SERVICE_UPDATE && frame[3].toInt() == SERVICE_BATTERY

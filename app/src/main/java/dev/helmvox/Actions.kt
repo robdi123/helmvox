@@ -81,6 +81,24 @@ object Actions {
         "com.apple.android.music",
     )
 
+    private val main = android.os.Handler(android.os.Looper.getMainLooper())
+
+    /**
+     * "Pon algo" sin nada que reanudar: abre la app de música, le pide reproducir y, si sigue en
+     * silencio, busca [fallbackQuery]. Usa el contexto de la aplicación: sigue aunque se cierre la
+     * pantalla de voz.
+     */
+    fun playSomething(ctx: Context, fallbackQuery: String) {
+        val app = ctx.applicationContext
+        val am = app.getSystemService(AudioManager::class.java)
+        playFromSearch(app, "")
+        main.postDelayed({
+            if (am.isMusicActive) return@postDelayed
+            media(app, MediaAction.PLAY) // muchas apps retoman la última cola o sus recomendaciones
+            main.postDelayed({ if (!am.isMusicActive) playFromSearch(app, fallbackQuery) }, 2500)
+        }, 3000)
+    }
+
     /** Reproduce [query] (vacío = "pon algo") en la app de música instalada. */
     fun playFromSearch(ctx: Context, query: String): Boolean {
         val intent = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH)

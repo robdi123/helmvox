@@ -35,6 +35,8 @@ sealed interface Command {
     /** Envía un enlace de Google Maps con tu posición a [who]. */
     data class ShareLocation(val who: String) : Command
     data object WhereAmI : Command
+    /** Tiempo actual y probabilidad de lluvia en las próximas horas, donde estás. */
+    data object Weather : Command
     data object ReadMessages : Command
     data object Time : Command
     data class Battery(val of: BatteryOf) : Command
@@ -51,7 +53,11 @@ sealed interface Command {
  */
 object CommandParser {
 
-    private val WAKE = Regex("^((oye|hey|ok|eh|venga) )*((casco|cardo|moto) )?(por favor )?")
+    private val WAKE = Regex(
+        "^((oye|hey|ok|eh|venga) )*((casco|cardo|moto) )?(por favor )?" +
+            // Cortesías al principio: "¿puedes poner…?", "quiero que pongas…"
+            "((me )?(puedes|podrias|puedas|podria) |(quiero|necesito) que )?"
+    )
     private val CANCEL = Regex("^(cancela|cancelar|nada|olvidalo|dejalo|no importa)\\b")
     private val HELP = Regex("^(ayuda|que puedes hacer|que sabes hacer|comandos)\\b")
     private val MESSAGE = Regex(
@@ -65,7 +71,7 @@ object CommandParser {
     )
     private val MODE_WORD = Regex("\\bmodo\\b")
     private val MY_PREFIX = Regex("(?i)^mi ")
-    private val GENERIC_MUSIC = Regex("^(otra|otro|esta|este|la siguiente|siguiente|la anterior|anterior|algo|una cancion)\\b")
+    private val GENERIC_MUSIC = Regex("^(otra|otro|esta|este|la siguiente|siguiente|la anterior|anterior|algo|una cancion|la musica|musica)\\b")
     private val COURTESY = Regex("( (por favor|porfa|porfavor|gracias))+$")
     private val DMC_MIC = Regex(
         "^(silencia|mutea|activa|desactiva|corta|abre|cierra|apaga|enciende|quita)( (el|mi))? (micro|microfono)" +
@@ -122,8 +128,9 @@ object CommandParser {
     private val CHANNELS = mapOf("a" to 1, "uno" to 1, "1" to 1, "b" to 2, "dos" to 2, "2" to 2, "c" to 3, "tres" to 3, "3" to 3)
     private val NUMBERS = mapOf("uno" to 1, "una" to 1, "dos" to 2, "tres" to 3, "cuatro" to 4, "cinco" to 5, "seis" to 6)
     private val PLAY_SEARCH = Regex(
-        "^(pon|ponme|pon me|reproduce|reproducir|quiero escuchar|escuchar)" +
-            "( (musica de|la musica de|canciones de|algo de|un poco de|la cancion|el disco|la lista|la playlist))?" +
+        "^(pon|ponme|pon me|poner|ponerme|pongas|reproduce|reproducir|reproduzcas|quiero escuchar|escuchar|toca|tocar)" +
+            "( (musica de|la musica de|canciones de|una cancion de|la cancion de|un tema de|temas de|algo de|un poco de" +
+            "|la cancion|el disco|la lista|la playlist))?" +
             " (?<q>.+?)( en (spotify|youtube music|youtube|deezer|apple music|amazon music))?$"
     )
     private val CALL = Regex("^(llama|llamar|llamame|marca|marcar|telefonea)( (a|al))? (.+)$")
@@ -140,7 +147,7 @@ object CommandParser {
                 "( (la|el))?( (musica|cancion|audio))?$"
         ) to MediaAction.PAUSE,
         Regex(
-            "^((play|reproduce|reproducir|pon|ponme|pon me|continua|reanuda|dale|dale a|sigue con|vuelve a poner)" +
+            "^((play|reproduce|reproducir|pon|ponme|pon me|poner|ponerme|pongas|continua|reanuda|dale|dale a|sigue con|vuelve a poner)" +
                 "( (la|el|algo de|un poco de|mi|mis))?( (musica|cancion|canciones|audio|playlist|lista))?" +
                 "( (otra vez|de nuevo))?|musica|quiero (escuchar )?musica)$"
         ) to MediaAction.PLAY,

@@ -44,6 +44,16 @@ class CardoLinkTest {
         assertEquals(75, d.batteryPercent)
     }
 
+    @Test fun settingsFrameFromRealHeadset() {
+        // Respuesta real del PackTalk Bold a una petición de ajustes concretos (código 0x01).
+        val reply = bytes("09 17 01 13 01 01 07 01 14 16 08 c2 f8 f7 77 01 00 00 00 1a 02 32 64 1b 01 00")
+        assertEquals(true, CardoLink.isSettingsFrame(reply))
+        assertEquals(true, CardoLink.parseDiagnosis(reply, battery = null).dmcMode)
+        assertEquals(true, CardoLink.isSettingsFrame(settings)) // aviso espontáneo (0x81)
+        assertEquals(false, CardoLink.isSettingsFrame(bytes("09 03 82 01 01 05")))
+        assertEquals(75, CardoLink.batteryPercent(bytes("09 03 82 01 01 05")))
+    }
+
     @Test fun missingSetting() {
         assertNull(CardoLink.settingValue(settings, 0x99))
         assertNull(CardoLink.settingValue(bytes("09 02 81 13 05"), 0x13)) // longitud que no cabe

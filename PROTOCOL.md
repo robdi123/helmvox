@@ -41,11 +41,11 @@ que todavía no está documentado aquí. ¡Contribuciones bienvenidas! (ver [CON
 | Código | Sentido | Qué es | Respuesta |
 |---|---|---|---|
 | `0x00` | → casco | Saludo / versión (paquete `03 00 00`) | `09 00 00` (protocolo 9) ✅ |
-| `0x01` | → casco | Leer ajustes. Datos: pares `[tipo][00]`; vacío = todos | `0x81` con lista de ajustes ✅ |
+| `0x01` | → casco | Leer ajustes. Datos: pares `[tipo][00]`; vacío = todos | Lista de ajustes con código `0x01` ✅ |
 | `0x10` | → casco | Suscribirse a servicios. Datos: lista de ids de servicio | Avisos con `0x82` 🧪 |
 | `0x20` | → casco | Evento (acción) — ver §3 | A veces ninguna |
 | `0x28` | → casco | Alternar "compartir radio FM", sin datos | 🧪 |
-| `0x81` | ← casco | Respuesta de ajustes — ver §4 | |
+| `0x81` | ← casco | Ajustes enviados por iniciativa del casco (p. ej. tras cambiar de modo) — ver §4 | |
 | `0x82` | ← casco | Aviso de un servicio suscrito — ver §5 | |
 
 ## 3. Eventos (código `0x20`)
@@ -77,7 +77,7 @@ Ejemplo completo — alternar DMC ⇄ Bluetooth: `09 03 20 00 CB 00`
 
 Tras cambiar de modo, el casco envía por su cuenta la lista completa de ajustes (`0x81`).
 
-## 4. Ajustes (respuesta `0x81`)
+## 4. Ajustes (respuesta `0x01` / aviso `0x81`)
 
 Los datos son una lista de registros:
 
@@ -118,7 +118,7 @@ Suscripción: `09 01 10 <id>`. El casco responde con el estado actual y avisa en
 
 | Servicio | Id | Estado | Estado |
 |---|---|---|---|
-| **Batería** | `0x01` | byte 5: `0`→~0 %, `1`→~20 %, `3`→~50 %, `5`→~75 %, `7`→~80 %, `9`→~100 % | 🧪 |
+| **Batería** | `0x01` | byte 5: `0`→~0 %, `1`→~20 %, `3`→~50 %, `5`→~75 %, `7`→~80 %, `9`→~100 % | ✅ PackTalk Bold |
 
 ## 6. Comportamiento observado
 

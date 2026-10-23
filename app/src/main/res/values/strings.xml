@@ -135,7 +135,7 @@
     </string-array>
     <string name="cmd_group_info">Info</string>
     <string-array name="cmd_info">
-        <item>What time is it?</item>
+        <item>What time is it? / What\'s the weather?</item>
         <item>Battery / phone battery / helmet battery</item>
         <item>Help / Cancel</item>
     </string-array>

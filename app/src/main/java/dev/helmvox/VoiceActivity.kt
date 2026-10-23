@@ -269,6 +269,7 @@ class VoiceActivity : Activity() {
 
             is Command.ShareLocation -> shareLocation(cmd.who)
             Command.WhereAmI -> whereAmI()
+            Command.Weather -> weather()
 
             is Command.IntercomMode -> say(ph.ok()) {
                 headsetCommand(STANDBY_WAIT_MS, { CardoLink.setIntercomMode(this, cmd.wantDmc) }) { r ->
@@ -320,7 +321,7 @@ class VoiceActivity : Activity() {
                     if (cmd.action != MediaAction.PLAY) return@postDelayed done()
                     // Si no había nada que reanudar, abre la app de música y que ponga algo.
                     main.postDelayed({
-                        if (!am.isMusicActive) Actions.playFromSearch(this, "")
+                        if (!am.isMusicActive) Actions.playSomething(this, if (lang == Lang.EN) "music" else "música")
                         done()
                     }, 1500)
                 }, 700)
@@ -429,6 +430,16 @@ class VoiceActivity : Activity() {
                 }
                 say(text) { done() }
             }
+        }.start()
+    }
+
+    private fun weather() {
+        if (!Places.hasPermission(this)) return say(ph.locationPermission()) { done() }
+        show("…")
+        sheet.setState(VoiceSheet.State.LOCATING)
+        Thread {
+            val now = Places.current(this)?.let { Weather.fetch(it) }
+            main.post { say(now?.let(ph::weather) ?: ph.noWeather()) { done() } }
         }.start()
     }
 

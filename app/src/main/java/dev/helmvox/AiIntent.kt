@@ -13,7 +13,7 @@ object AiIntent {
         "play_music", "pause_music", "next_track", "previous_track", "play_search", "volume_up", "volume_down",
         "intercom_mode", "group_mute", "mic_toggle", "share_music", "share_radio", "intercom_call", "intercom_end",
         "radio_on", "radio_off", "radio_next", "radio_previous", "radio_station",
-        "time", "battery", "help", "cancel", "unknown",
+        "time", "weather", "battery", "help", "cancel", "unknown",
     )
 
     /** Instrucciones para la IA: qué significa cada intención y qué campos rellenar. */
@@ -44,6 +44,7 @@ object AiIntent {
         - radio_on / radio_off / radio_next / radio_previous: radio FM del casco.
         - radio_station: poner la emisora guardada número station (1 a 6).
         - time: qué hora es.
+        - weather: el tiempo / clima / si va a llover / temperatura.
         - battery: batería. battery_of = "phone", "headset" o "both".
         - help: qué puede hacer el asistente. cancel: el usuario cancela.
         - unknown: no es ninguna de las anteriores o no se entiende.
@@ -109,6 +110,7 @@ object AiIntent {
             "radio_previous" -> Command.Radio(RadioAction.PREVIOUS)
             "radio_station" -> int("station")?.takeIf { it in 1..6 }?.let { Command.Radio(RadioAction.STATION, it) }
             "time" -> Command.Time
+            "weather" -> Command.Weather
             "battery" -> Command.Battery(
                 when (str("battery_of")) {
                     "phone" -> BatteryOf.PHONE

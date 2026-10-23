@@ -133,7 +133,7 @@
     </string-array>
     <string name="cmd_group_info">Información</string>
     <string-array name="cmd_info">
-        <item>¿Qué hora es?</item>
+        <item>¿Qué hora es? / ¿Cómo está el tiempo? / ¿Va a llover?</item>
         <item>Batería / del móvil / del casco</item>
         <item>Ayuda / Cancela</item>
     </string-array>

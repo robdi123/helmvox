@@ -38,6 +38,7 @@ la app escucha, entiende y responde en ese idioma. La interfaz sigue el idioma d
 - **Rutas:** «llévame a casa», «¿cómo llego a Valparaíso?», «necesito bencina».
 - **Llamadas:** «llama a Laura», «vuelve a llamar».
 - **Ubicación:** «¿dónde estoy?», «mándale mi ubicación a Juan».
+- **Tiempo:** «¿cómo está el clima?», «¿va a llover?» (temperatura, cielo, viento y lluvia de las próximas horas).
 - **Batería del móvil** y avisos automáticos de batería baja.
 
 **Control del casco Cardo:**
@@ -80,6 +81,7 @@ por sí sola, suelen ser céntimos al mes. Sin clave o sin cobertura, todo sigue
 - **Todo se procesa en tu móvil.** HelmVox no tiene servidores ni recoge datos.
 - Tu clave de API se guarda **solo en el almacenamiento privado de la app**.
 - Con la IA activada, **solo la frase que no se entendió** se envía a Anthropic para interpretarla.
+- Al preguntar el tiempo, tu **posición aproximada** se envía a [Open-Meteo](https://open-meteo.com/) (servicio libre, sin cuenta).
 - El reconocimiento de voz usa el servicio de voz de tu móvil (normalmente Google).
 
 ## Compilar

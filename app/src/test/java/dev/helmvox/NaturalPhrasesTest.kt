@@ -27,6 +27,11 @@ class NaturalPhrasesTest {
         assertEquals(Command.Media(MediaAction.NEXT), p("salta esta"))
         assertEquals(Command.Media(MediaAction.NEXT), p("pon otra canción"))
         assertEquals(Command.Media(MediaAction.PREVIOUS), p("vuelve al tema de antes, el anterior"))
+        assertEquals(Command.PlaySearch("Bruno Mars"), p("puedes poner una canción de Bruno Mars"))
+        assertEquals(Command.PlaySearch("Shakira"), p("¿podrías poner algo de Shakira?"))
+        assertEquals(Command.Media(MediaAction.PLAY), p("algo para escuchar por favor"))
+        assertEquals(Command.Media(MediaAction.PLAY), p("pon algo para escuchar"))
+        assertEquals(Command.Media(MediaAction.PLAY), p("¿me puedes poner la música?"))
     }
 
     @Test fun volume() {
@@ -48,7 +53,7 @@ class NaturalPhrasesTest {
         assertEquals(Command.Navigate("casa"), p("llévame a mi casa"))
         assertEquals(Command.Navigate("Valparaíso"), p("¿cómo llego a Valparaíso?"))
         assertEquals(Command.Navigate("gasolinera"), p("tengo que cargar bencina"))
-        assertEquals(Command.Call("juan"), p("puedes llamar a Juan"))
+        assertEquals(Command.Call("Juan"), p("puedes llamar a Juan"))
         assertEquals(Command.Redial, p("llama al último que me llamó"))
     }
 

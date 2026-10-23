@@ -92,6 +92,9 @@ internal object EnglishParser {
                 }
             )
         }
+        if (w.has("weather", "forecast", "rain", "temperature", "drizzle", "snow") ||
+            (w.hasWord("cold", "hot", "warm") && w.has("is it", "outside", "going to be"))
+        ) return Command.Weather
         if (w.hasWord("time") || t.contains("what time")) return Command.Time
 
         // --- Combustible y rutas ---
