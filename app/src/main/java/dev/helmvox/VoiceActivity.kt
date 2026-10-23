@@ -263,6 +263,7 @@ class VoiceActivity : Activity() {
             }
 
             Command.ReadMessages -> {
+                CascoListenerService.instance?.ingestActive() // por si hay mensajes de antes de arrancar
                 val unread = MessageStore.unread()
                 if (unread.isEmpty()) say(ph.noNewMessages()) { done() } else announceMessages(unread)
             }
@@ -327,12 +328,16 @@ class VoiceActivity : Activity() {
                 }, 700)
             }
 
-            is Command.PlaySearch -> say(ph.playing(cmd.query)) {
-                releaseAudio()
-                main.postDelayed({
-                    if (Actions.playFromSearch(this, cmd.query)) done()
-                    else say(ph.noMusicApp()) { done() }
-                }, 500)
+            is Command.PlaySearch -> {
+                // YouTube Music no deja a otras apps reproducir una búsqueda: se abren los resultados.
+                val onlyResults = Actions.searchNeedsTap(this)
+                say(if (onlyResults) ph.searchOpened(cmd.query) else ph.playing(cmd.query)) {
+                    releaseAudio()
+                    main.postDelayed({
+                        if (Actions.playFromSearch(this, cmd.query)) done()
+                        else say(ph.noMusicApp()) { done() }
+                    }, 500)
+                }
             }
 
             is Command.Volume -> afterAudio { Actions.volume(this, cmd.up) }

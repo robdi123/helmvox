@@ -3,12 +3,17 @@ package dev.helmvox
 import android.Manifest
 import android.app.SearchManager
 import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.media.session.MediaController
+import android.media.session.MediaSessionManager
+import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.BatteryManager
+import android.os.Bundle
 import android.os.Build
 import android.provider.ContactsContract
 import android.provider.MediaStore
@@ -91,28 +96,97 @@ object Actions {
     fun playSomething(ctx: Context, fallbackQuery: String) {
         val app = ctx.applicationContext
         val am = app.getSystemService(AudioManager::class.java)
-        playFromSearch(app, "")
+        // Al frente: sin suscripción, algunas apps (YouTube Music) no reproducen en segundo plano.
+        openMusicApp(app, "")
         main.postDelayed({
             if (am.isMusicActive) return@postDelayed
-            media(app, MediaAction.PLAY) // muchas apps retoman la última cola o sus recomendaciones
+            // Ya abierta, su sesión multimedia acepta "play" (retoma la cola o sus recomendaciones).
+            musicController(app)?.transportControls?.play() ?: media(app, MediaAction.PLAY)
             main.postDelayed({ if (!am.isMusicActive) playFromSearch(app, fallbackQuery) }, 2500)
         }, 3000)
     }
 
-    /** Reproduce [query] (vacío = "pon algo") en la app de música instalada. */
+    /**
+     * Reproduce [query] en la app de música. Las apps (YouTube Music, Spotify…) solo *buscan* con el
+     * Intent estándar, pero *reproducen* si se lo pide su sesión multimedia, como hacen Android Auto
+     * y el asistente. Eso necesita el permiso de leer notificaciones; sin él, solo se abre la búsqueda.
+     *
+     * La app se trae siempre al frente antes: sin suscripción, YouTube Music no reproduce en segundo
+     * plano y contesta "No se puede reproducir la pista".
+     */
     fun playFromSearch(ctx: Context, query: String): Boolean {
+        val app = ctx.applicationContext
+        val pkg = musicPackages(app).firstOrNull()
+        if (pkg == YOUTUBE_MUSIC && query.isNotBlank()) return openYouTubeMusicResults(app, query)
+        if (query.isBlank() || pkg == null) return openAndAskSession(app, query)
+        // 1º, como Android Auto: buscar en el catálogo de la app y reproducir un resultado concreto.
+        MusicBrowser.playSearch(app, pkg, query) { ok -> if (!ok) openAndAskSession(app, query) }
+        return true
+    }
+
+    private const val YOUTUBE_MUSIC = "com.google.android.apps.youtube.music"
+
+    /**
+     * YouTube Music solo deja reproducir una búsqueda a apps de Google (asistente, Android Auto):
+     * con el Intent estándar no busca, su sesión responde "No se puede reproducir la pista" y su
+     * catálogo rechaza la conexión. Lo único fiable es abrir los resultados para tocar uno.
+     */
+    fun searchNeedsTap(ctx: Context) = musicPackages(ctx.applicationContext).firstOrNull() == YOUTUBE_MUSIC
+
+    private fun openYouTubeMusicResults(ctx: Context, query: String): Boolean = try {
+        ctx.startActivity(
+            Intent(Intent.ACTION_VIEW, Uri.parse("https://music.youtube.com/search?q=" + Uri.encode(query)))
+                .setPackage(YOUTUBE_MUSIC)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        true
+    } catch (_: ActivityNotFoundException) {
+        false
+    }
+
+    /** Plan B: abrir la app (búsqueda) y pedir "reproduce esta búsqueda" a su sesión multimedia. */
+    private fun openAndAskSession(app: Context, query: String): Boolean {
+        val alreadyOpen = musicController(app) != null
+        if (!openMusicApp(app, query)) return false
+        // Hay que esperar a que la app esté al frente (y, si estaba cerrada, a que cree su sesión).
+        main.postDelayed({
+            musicController(app)?.transportControls?.playFromSearch(query, Bundle())
+        }, if (alreadyOpen) 1500 else 3500)
+        return true
+    }
+
+    private fun openMusicApp(ctx: Context, query: String): Boolean {
         val intent = Intent(MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH)
             .putExtra(SearchManager.QUERY, query)
             .putExtra(MediaStore.EXTRA_MEDIA_FOCUS, "vnd.android.cursor.item/*")
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         val handlers = ctx.packageManager.queryIntentActivities(intent, 0).map { it.activityInfo.packageName }.toSet()
-        val pkg = MUSIC_APPS.firstOrNull { it in handlers } ?: handlers.firstOrNull() ?: return false
+        val pkg = musicPackages(ctx).firstOrNull { it in handlers } ?: handlers.firstOrNull() ?: return false
         return try {
             ctx.startActivity(intent.setPackage(pkg))
             true
         } catch (_: ActivityNotFoundException) {
             false
         }
+    }
+
+    /** Sesión de una app de música que acepte "reproducir búsqueda" (la que suena, o la preferida). */
+    private fun musicController(ctx: Context): MediaController? {
+        val sessions = try {
+            ctx.getSystemService(MediaSessionManager::class.java)
+                .getActiveSessions(ComponentName(ctx, CascoListenerService::class.java))
+        } catch (_: SecurityException) {
+            return null // sin permiso de leer notificaciones
+        }
+        val usable = sessions.filter { (it.playbackState?.actions ?: 0L) and PlaybackState.ACTION_PLAY_FROM_SEARCH != 0L }
+        val order = musicPackages(ctx)
+        return usable.firstOrNull { it.playbackState?.state == PlaybackState.STATE_PLAYING }
+            ?: usable.filter { it.packageName in order }.minByOrNull { order.indexOf(it.packageName) }
+    }
+
+    /** Apps de música instaladas, en orden de preferencia. */
+    private fun musicPackages(ctx: Context) = MUSIC_APPS.filter { pkg ->
+        runCatching { ctx.packageManager.getPackageInfo(pkg, 0) }.isSuccess
     }
 
     fun volume(ctx: Context, up: Boolean) {

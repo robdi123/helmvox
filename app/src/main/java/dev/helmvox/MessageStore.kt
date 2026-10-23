@@ -33,8 +33,8 @@ object MessageStore {
 
     @Synchronized
     fun add(app: String, appLabel: String, sender: String, text: String, n: Notification): IncomingMessage? {
-        // WhatsApp vuelve a publicar la misma notificación al llegar otro mensaje: no repetir.
-        if (messages.lastOrNull { it.sender == sender && it.app == app }?.text == text) return null
+        // WhatsApp vuelve a publicar la conversación entera al llegar otro mensaje: no repetir.
+        if (messages.any { it.app == app && it.sender == sender && it.text == text }) return null
         val action = n.actions?.firstOrNull { a -> a.remoteInputs?.any { it.allowFreeFormInput } == true }
         val msg = IncomingMessage(
             id = nextId++,

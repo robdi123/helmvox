@@ -77,6 +77,10 @@ class Phrases(val lang: Lang) {
 
     // --- Música ---
     fun playing(query: String) = t("Poniendo $query.", "Playing $query.")
+    fun searchOpened(query: String) = t(
+        "Te abro los resultados de $query en YouTube Music. Toca una canción para empezar.",
+        "Opening results for $query in YouTube Music. Tap a song to start.",
+    )
     fun noMusicApp() = t("No encuentro ninguna app de música.", "I can't find a music app.")
 
     // --- Información ---

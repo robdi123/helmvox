@@ -37,6 +37,8 @@ kotlin {
 dependencies {
     // SDK oficial de Anthropic (Claude) para la IA opcional con la clave de cada usuario.
     implementation("com.anthropic:anthropic-java:2.34.0")
+    // Catálogo de apps de música (búsqueda + reproducir un resultado, como Android Auto).
+    implementation("androidx.media:media:1.7.0")
     testImplementation("junit:junit:4.13.2")
     // org.json real para las pruebas en el PC (el de Android es solo un esqueleto ahí).
     testImplementation("org.json:json:20240303")

@@ -37,6 +37,9 @@ class CascoListenerService : NotificationListenerService() {
 
     override fun onListenerConnected() {
         Log.i(TAG, "servicio de notificaciones conectado")
+        instance = this
+        // Los mensajes que ya estaban en la barra antes de arrancar: guardarlos sin anunciarlos.
+        ingestActive()
         val receiver = object : BroadcastReceiver() {
             override fun onReceive(c: Context, i: Intent) = onPhoneBattery(i)
         }
@@ -46,6 +49,7 @@ class CascoListenerService : NotificationListenerService() {
     }
 
     override fun onListenerDisconnected() {
+        instance = null
         batteryReceiver?.let { runCatching { unregisterReceiver(it) } }
         batteryReceiver = null
         main.removeCallbacks(headsetCheck)
@@ -54,12 +58,7 @@ class CascoListenerService : NotificationListenerService() {
     // --- Mensajes ---
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        val label = MESSAGING_APPS[sbn.packageName] ?: return
-        val n = sbn.notification
-        if (n.flags and Notification.FLAG_GROUP_SUMMARY != 0) return
-        if (n.flags and Notification.FLAG_ONGOING_EVENT != 0) return
-        val (sender, text) = parse(n) ?: return
-        val msg = MessageStore.add(sbn.packageName, label, sender, text, n) ?: return
+        val msg = ingest(sbn).lastOrNull() ?: return
         Log.i(TAG, "mensaje de ${msg.sender} por ${msg.appLabel} (responder: ${msg.canReply})")
 
         if (!AppPrefs.readMessages(this) || !Headset.isConnected(this) || VoiceActivity.isActive) return
@@ -77,20 +76,45 @@ class CascoListenerService : NotificationListenerService() {
         }
     }
 
-    /** Remitente y texto del último mensaje; usa MessagingStyle si la app lo publica. */
+    /** Recoge las notificaciones de mensajería que ya están en la barra (sin anunciarlas). */
+    fun ingestActive() {
+        val active = runCatching { activeNotifications }.getOrNull() ?: return
+        val added = active.sortedBy { it.postTime }.sumOf { ingest(it).size }
+        Log.i(TAG, "mensajes ya en la barra: $added nuevos")
+    }
+
+    /** Guarda los mensajes de una notificación de mensajería; devuelve los que eran nuevos. */
+    private fun ingest(sbn: StatusBarNotification): List<IncomingMessage> {
+        val label = MESSAGING_APPS[sbn.packageName] ?: return emptyList()
+        val n = sbn.notification
+        if (n.flags and Notification.FLAG_GROUP_SUMMARY != 0) return emptyList()
+        if (n.flags and Notification.FLAG_ONGOING_EVENT != 0) return emptyList()
+        return parse(n).mapNotNull { (sender, text) -> MessageStore.add(sbn.packageName, label, sender, text, n) }
+    }
+
+    /**
+     * Remitente y texto de cada mensaje de la notificación (MessagingStyle guarda los no leídos de
+     * esa conversación); si la app no usa ese estilo, el título y el texto de la notificación.
+     */
     @Suppress("DEPRECATION")
-    private fun parse(n: Notification): Pair<String, String>? {
+    private fun parse(n: Notification): List<Pair<String, String>> {
         val extras = n.extras
-        // MessagingStyle guarda cada mensaje como un Bundle con "text" y "sender_person" / "sender".
-        val last = extras.getParcelableArray(Notification.EXTRA_MESSAGES)?.lastOrNull() as? Bundle
-        val lastSender = (last?.getParcelable<Person>("sender_person"))?.name ?: last?.getCharSequence("sender")
         val title = extras.getCharSequence(Notification.EXTRA_CONVERSATION_TITLE)
             ?: extras.getCharSequence(Notification.EXTRA_TITLE)
-        val sender = lastSender ?: title ?: return null
-        val text = last?.getCharSequence("text") ?: extras.getCharSequence(Notification.EXTRA_TEXT) ?: return null
-        // En grupos: "Nombre del grupo, Juan".
-        val who = if (title != null && lastSender != null && title.toString() != lastSender.toString()) "$title, $lastSender" else sender
-        return who.toString() to text.toString()
+        // Cada mensaje es un Bundle con "text" y "sender_person" / "sender".
+        val messages = extras.getParcelableArray(Notification.EXTRA_MESSAGES)?.mapNotNull { it as? Bundle }.orEmpty()
+        if (messages.isEmpty()) {
+            val text = extras.getCharSequence(Notification.EXTRA_TEXT) ?: return emptyList()
+            return listOfNotNull(title?.let { it.toString() to text.toString() })
+        }
+        return messages.mapNotNull { m ->
+            val sender = (m.getParcelable<Person>("sender_person"))?.name ?: m.getCharSequence("sender") ?: title
+            val text = m.getCharSequence("text")
+            if (sender == null || text == null) return@mapNotNull null
+            // En grupos: "Nombre del grupo, Juan".
+            val who = if (title != null && title.toString() != sender.toString()) "$title, $sender" else sender.toString()
+            who to text.toString()
+        }
     }
 
     /** Frases en el idioma de la conversación (puede cambiar en ajustes mientras el servicio vive). */
@@ -124,10 +148,15 @@ class CascoListenerService : NotificationListenerService() {
         }.start()
     }
 
-    private companion object {
-        const val TAG = "HelmVox"
-        const val HEADSET_BATTERY_EVERY_MS = 10 * 60 * 1000L
-        val MESSAGING_APPS = mapOf(
+    companion object {
+        /** El servicio conectado (si Android lo tiene en marcha), para leer la barra a demanda. */
+        @Volatile
+        var instance: CascoListenerService? = null
+            private set
+
+        private const val TAG = "HelmVox"
+        private const val HEADSET_BATTERY_EVERY_MS = 10 * 60 * 1000L
+        private val MESSAGING_APPS = mapOf(
             "com.whatsapp" to "WhatsApp",
             "com.whatsapp.w4b" to "WhatsApp Business",
             "org.telegram.messenger" to "Telegram",

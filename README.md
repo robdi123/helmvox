@@ -35,6 +35,8 @@ la app escucha, entiende y responde en ese idioma. La interfaz sigue el idioma d
 
 - **Mensajes:** te lee los WhatsApp, Telegram y SMS al llegar y te deja responder con la voz.
 - **Música:** pon / pausa / siguiente / anterior / volumen, o «pon música de Queen».
+  Con **YouTube Music**, «pon música de…» abre los resultados y hay que tocar una canción: YouTube
+  Music solo deja reproducir búsquedas a apps de Google. Con Spotify se intenta reproducir directamente.
 - **Rutas:** «llévame a casa», «¿cómo llego a Valparaíso?», «necesito bencina».
 - **Llamadas:** «llama a Laura», «vuelve a llamar».
 - **Ubicación:** «¿dónde estoy?», «mándale mi ubicación a Juan».
