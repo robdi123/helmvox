@@ -19,6 +19,9 @@ internal object EnglishParser {
         "^(send|share|text|give)( (my|our))? (location|position|coordinates|pin)( (to|with))? (?<who>.+)$"
     )
     private val SHARE_LOCATION_TO_FIRST = Regex("^(send|text|give) (?<who>.+?) (my|our) (location|position|pin)$")
+    private val MESSAGE_TO = Regex(
+        "^((send|text|message|whatsapp|write)( (a|an))?( (message|text|whatsapp))?( to)? |(a )?(message|text|whatsapp) (to|for) )(?<who>.+)$"
+    )
     private val CALL = Regex("^(call|phone|dial|ring)( up)? (?<who>.+)$")
     private val NAVIGATE = Regex(
         "^(navigate|take me|drive|go|get me|directions|route|show me the way|how do i get|lets go|let s go)" +
@@ -54,6 +57,7 @@ internal object EnglishParser {
         (SHARE_LOCATION.matchEntire(t) ?: SHARE_LOCATION_TO_FIRST.matchEntire(t))?.let { m ->
             return Command.ShareLocation(original(m, "who").clean())
         }
+        MESSAGE_TO.matchEntire(t)?.let { m -> return Command.Message(original(m, "who").clean()) }
         if (w.has("redial", "call back", "call again", "call the last", "last number", "call him back", "call her back", "call them back")) {
             return Command.Redial
         }

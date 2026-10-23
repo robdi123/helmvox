@@ -19,6 +19,9 @@ class EnglishPhrasesTest {
         assertEquals(Command.Message("Laura", "I'm on my way"), p("Text Laura saying I'm on my way"))
         assertEquals(Command.Message("Mike", "running late"), p("send a message to Mike that running late"))
         assertEquals(Command.Message("Pedro", "call me later"), p("tell Pedro to say call me later"))
+        assertEquals(Command.Message("Nano"), p("send a WhatsApp to Nano"))
+        assertEquals(Command.Message("Nano"), p("text Nano"))
+        assertEquals(Command.Message("Nano"), p("message to Nano"))
     }
 
     @Test fun music() {

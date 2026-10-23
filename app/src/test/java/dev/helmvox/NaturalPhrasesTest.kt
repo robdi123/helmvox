@@ -17,6 +17,13 @@ class NaturalPhrasesTest {
         assertEquals(Command.ReadMessages, p("hay algo nuevo en el chat"))
         assertEquals(Command.Message("Laura", "voy saliendo"), p("escríbele a Laura que voy saliendo"))
         assertEquals(Command.Message("Pedro", "llego tarde"), p("dile a Pedro que llego tarde"))
+        // Sin texto: la app preguntará qué decir (y a veces el reconocedor se come el verbo)
+        assertEquals(Command.Message("Nano"), p("manda un mensaje a Nano"))
+        assertEquals(Command.Message("Nano"), p("un mensaje de WhatsApp a Nano"))
+        assertEquals(Command.Message("Nano"), p("Enviar WhatsApp a Nano"))
+        assertEquals(Command.Message("Nano"), p("Mensaje a Nano"))
+        assertEquals(Command.Message("Laura"), p("escríbele a la Laura"))
+        assertEquals(Command.ReadMessages, p("tengo mensajes de WhatsApp"))
     }
 
     @Test fun music() {

@@ -44,7 +44,8 @@ class AiIntentTest {
     @Test fun rejectsIncompleteOrUnknown() {
         assertNull(ai("unknown"))
         assertNull(ai("navigate")) // sin destino
-        assertNull(ai("send_message", "who" to "Laura")) // sin texto
+        assertNull(ai("send_message")) // sin destinatario
+        assertEquals(Command.Message("Laura"), ai("send_message", "who" to "Laura")) // sin texto: la app pregunta
         assertNull(ai("radio_station", "station" to 9)) // fuera de rango
         assertNull(ai("inventado"))
     }

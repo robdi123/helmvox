@@ -11,7 +11,8 @@ enum class BatteryOf { PHONE, HEADSET, BOTH }
 sealed interface Command {
     data class Navigate(val destination: String) : Command
     data class Call(val who: String) : Command
-    data class Message(val who: String, val text: String) : Command
+    /** Mensaje a [who]; sin [text], la app pregunta qué decir. */
+    data class Message(val who: String, val text: String? = null) : Command
     data class Media(val action: MediaAction) : Command
     /** "Pon música de Queen": busca y reproduce en la app de música. */
     data class PlaySearch(val query: String) : Command
@@ -65,6 +66,12 @@ object CommandParser {
             "( (un|el) (mensaje|sms|whatsapp|wasap))?( (a|al|para))?( (la|el))? (?<who>.+?)" +
             " (diciendo|que diga|que ponga|que dice|que) (?<text>.+)$"
     )
+    /** "Manda un mensaje / WhatsApp a Nano" sin texto (a veces el reconocedor se come el verbo). */
+    private val MESSAGE_TO = Regex(
+        "^((manda|mandale|mandar|envia|enviale|enviar|escribe|escribele|escribir|escribirle) )?((un|el|otro) )?" +
+            "(mensaje|mensajito|sms|whatsapp|wasap)( de whatsapp)? (a|al|para)( (la|el))? (?<who>.+)$"
+    )
+    private val WRITE_TO = Regex("^(escribele|escribirle|escribe|mandale|enviale) (a|al)( (la|el))? (?<who>.+)$")
     private val INTERCOM_MODE = Regex(
         "^(cambia|cambiar|pasa|pasar|pon|activa|modo)( (a|al|el|de))?( (modo|intercom))?" +
             "( (a|al|de))?( (intercom|modo))?( (?<target>dmc|d m c|de m c|mesh|malla|bluetooth|blutu|bluetut|blue tooth))?$"
@@ -214,6 +221,9 @@ object CommandParser {
         if (IC_END.matches(t)) return Command.IntercomEnd
         MESSAGE.find(t)?.let { m ->
             return Command.Message(n.original(m.groups["who"]!!.range), n.original(m.groups["text"]!!.range))
+        }
+        (MESSAGE_TO.matchEntire(t) ?: WRITE_TO.matchEntire(t))?.let { m ->
+            return Command.Message(clean(n.original(m.groups["who"]!!.range)))
         }
         CALL.find(t)?.let { m -> return Command.Call(clean(n.original(m.groups[4]!!.range))) }
         NAVIGATE.find(t)?.let { m ->

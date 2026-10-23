@@ -38,6 +38,7 @@ class Phrases(val lang: Lang) {
     fun contactNotFound(who: String) = t("No encuentro a $who en tus contactos.", "I can't find $who in your contacts.")
     fun calling(name: String) = t("Llamando a $name.", "Calling $name.")
     fun redialing() = t("Repitiendo la última llamada.", "Calling the last number again.")
+    fun whatToSay(name: String) = t("¿Qué le digo a $name?", "What should I tell $name?")
     fun confirmMessage(name: String, text: String) = t("¿Envío a $name: $text?", "Send to $name: $text?")
     fun noNewMessages() = t("No tienes mensajes nuevos.", "You have no new messages.")
     fun oneMessage(sender: String, app: String, text: String) =

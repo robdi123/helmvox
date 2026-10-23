@@ -102,8 +102,9 @@ class VoiceActivity : Activity() {
 
     private fun listen(onText: (List<String>) -> Unit) {
         sheet.setState(VoiceSheet.State.LISTENING)
-        beep()
-        main.postDelayed({ startRecognizer(onText) }, 300)
+        // El pitido suena cuando el reconocedor ya escucha (onReadyForSpeech): si sonara antes,
+        // lo primero que dices después del pitido se perdería.
+        startRecognizer(onText)
     }
 
     private fun startRecognizer(onText: (List<String>) -> Unit) {
@@ -127,7 +128,13 @@ class VoiceActivity : Activity() {
                 onRecognitionError(error, onText)
             }
 
-            override fun onReadyForSpeech(params: Bundle?) {}
+            private var beeped = false
+            override fun onReadyForSpeech(params: Bundle?) {
+                if (current() && !beeped) {
+                    beeped = true
+                    beep()
+                }
+            }
             override fun onBeginningOfSpeech() {}
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
@@ -246,21 +253,7 @@ class VoiceActivity : Activity() {
                 }
             }
 
-            is Command.Message -> {
-                val contact = Actions.findContact(this, cmd.who)
-                    ?: return say(ph.contactNotFound(cmd.who)) { done() }
-                retries = MAX_RETRIES // en la confirmación no reintentamos: si no se oye, no se envía
-                ask(ph.confirmMessage(contact.name, cmd.text)) {
-                    listen { answer ->
-                        if (answer.any { CommandParser.isYes(it, lang) }) {
-                            val sent = Actions.sms(this, contact.number, cmd.text)
-                            say(if (sent) ph.sent() else ph.leftInMessages()) { done() }
-                        } else {
-                            say(ph.cancelled()) { done() }
-                        }
-                    }
-                }
-            }
+            is Command.Message -> sendMessage(cmd.who, cmd.text)
 
             Command.ReadMessages -> {
                 CascoListenerService.instance?.ingestActive() // por si hay mensajes de antes de arrancar
@@ -354,6 +347,29 @@ class VoiceActivity : Activity() {
     }
 
     // --- Mensajes ---
+
+    /**
+     * Envía [text] a [who]: si le escribió hace poco por WhatsApp (u otra app que deje responder),
+     * en esa conversación; si no, por SMS. Sin texto, primero pregunta qué decir.
+     */
+    private fun sendMessage(who: String, text: String?) {
+        val chat = MessageStore.latestReplyableFrom(who)
+        val contact = if (chat == null) Actions.findContact(this, who) else null
+        val name = chat?.sender ?: contact?.name ?: return say(ph.contactNotFound(who)) { done() }
+        fun confirm(body: String) {
+            retries = MAX_RETRIES // en la confirmación no reintentamos: si no se oye, no se envía
+            ask(ph.confirmMessage(name, body)) {
+                listen { answer ->
+                    if (!answer.any { CommandParser.isYes(it, lang) }) return@listen say(ph.cancelled()) { done() }
+                    val sent = if (chat != null) MessageStore.reply(this, chat, body) else Actions.sms(this, contact!!.number, body)
+                    say(if (sent) ph.sent() else ph.leftInMessages()) { done() }
+                }
+            }
+        }
+        if (text != null) return confirm(text)
+        retries = 0
+        ask(ph.whatToSay(name)) { listen { dictated -> confirm(dictated.first()) } }
+    }
 
     /** Lee los mensajes y ofrece responder al último (si su app lo permite). */
     private fun announceMessages(messages: List<IncomingMessage>) {

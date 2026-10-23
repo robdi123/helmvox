@@ -28,7 +28,7 @@ object AiIntent {
         - navigate: ir a un lugar. destination = el lugar tal como se dijo ("casa", "Valparaíso", "gasolinera").
         - call: llamar a alguien. who = nombre o número.
         - redial: repetir la última llamada.
-        - send_message: enviar un mensaje. who = destinatario, text = el texto a enviar.
+        - send_message: enviar un mensaje. who = destinatario, text = el texto a enviar (null si no lo dijo).
         - read_messages: leer mensajes/notificaciones/WhatsApp recibidos.
         - share_location: enviar mi ubicación. who = destinatario.
         - where_am_i: decir dónde estoy.
@@ -82,11 +82,7 @@ object AiIntent {
             "navigate" -> str("destination")?.let { Command.Navigate(it) }
             "call" -> str("who")?.let { Command.Call(it) }
             "redial" -> Command.Redial
-            "send_message" -> {
-                val who = str("who")
-                val text = str("text")
-                if (who != null && text != null) Command.Message(who, text) else null
-            }
+            "send_message" -> str("who")?.let { Command.Message(it, str("text")) }
             "read_messages" -> Command.ReadMessages
             "share_location" -> str("who")?.let { Command.ShareLocation(it) }
             "where_am_i" -> Command.WhereAmI
